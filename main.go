@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	m "github.com/FokusInternal/bifrost/middlewares"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -17,7 +18,9 @@ func main() {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
-		r.Get("/", v1.SayHello)
+		r.Get("/hello", v1.SayHello)
+
+		r.With(m.RateLimitMiddleware()).Post("/rate", v1.SayHello)
 	})
 
 	http.ListenAndServe(":3333", r)
