@@ -158,9 +158,10 @@ curl -X POST http://localhost:3333/v1/services \
 DELETE `/v1/services/<id>` to remove a service.
 
 ### Proxy using a virtual key
-Send any request to `/v1/proxy/<path>` with header `X-Virtual-Key` set to a
-previously issued key. Bifrost injects the real API key and forwards the request
-to the mapped service.
+Send any request to `/v1/proxy/<path>` with either the `X-Virtual-Key` header or
+the `key` query parameter containing a previously issued key. Bifrost injects
+the real API key, strips the virtual key from the forwarded request and forwards
+the request to the mapped service.
 
 
 # Planned Extensions
