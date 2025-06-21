@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Spinnup a redis before executing requests
+# Spin up a Redis before executing requests
 # docker run -d --name redis-dev -p 6379:6379 redis:7-alpine
 
 for i in {1..30}; do
