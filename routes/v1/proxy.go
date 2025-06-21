@@ -17,6 +17,7 @@ import (
 // virtual key. The key should be supplied via the X-Virtual-Key header.
 func Proxy(w http.ResponseWriter, r *http.Request) {
 	keyID := r.Header.Get("X-Virtual-Key")
+	r.Header.Del("X-Virtual-Key")
 	if keyID == "" {
 		q := r.URL.Query()
 		keyID = q.Get("key")
