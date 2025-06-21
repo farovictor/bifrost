@@ -1,0 +1,49 @@
+package routes
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/FokusInternal/bifrost/pkg/keys"
+)
+
+// KeyStore holds the active VirtualKeys in memory.
+var KeyStore = keys.NewStore()
+
+// CreateKey handles POST /keys and stores a new VirtualKey.
+func CreateKey(w http.ResponseWriter, r *http.Request) {
+	var k keys.VirtualKey
+	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if err := KeyStore.Create(k); err != nil {
+		switch err {
+		case keys.ErrKeyExists:
+			http.Error(w, "key already exists", http.StatusConflict)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(k)
+}
+
+// DeleteKey handles DELETE /keys/{id} and removes a VirtualKey.
+func DeleteKey(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if err := KeyStore.Delete(id); err != nil {
+		switch err {
+		case keys.ErrKeyNotFound:
+			http.Error(w, "not found", http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

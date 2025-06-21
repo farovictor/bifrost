@@ -18,6 +18,8 @@ func setupRouter() http.Handler {
 	r.Get("/version", routes.Version)
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/hello", v1.SayHello)
+		r.Post("/keys", routes.CreateKey)
+		r.Delete("/keys/{id}", routes.DeleteKey)
 	})
 	return r
 }
