@@ -20,6 +20,7 @@ func setupRouter() http.Handler {
 	r.Get("/version", routes.Version)
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(rl.AuthMiddleware())
+		r.Use(rl.OrgCtxMiddleware())
 		r.Get("/hello", v1.SayHello)
 		r.Post("/users", routes.CreateUser)
 		r.Post("/keys", routes.CreateKey)
@@ -76,6 +77,7 @@ func TestV1Hello(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

@@ -25,6 +25,7 @@ func TestCreateKeyInvalidJSON(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader("{bad"))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -56,6 +57,7 @@ func TestCreateKeyDuplicate(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -77,6 +79,7 @@ func TestDeleteKeyNotFound(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/unknown", nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -101,6 +104,7 @@ func TestCreateKeyMissingService(t *testing.T) {
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -138,6 +142,7 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -170,6 +175,7 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -202,6 +208,7 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

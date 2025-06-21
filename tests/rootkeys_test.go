@@ -23,6 +23,7 @@ func TestCreateRootKey(t *testing.T) {
 	body, _ := json.Marshal(rk)
 	req := httptest.NewRequest(http.MethodPost, "/v1/rootkeys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -51,6 +52,7 @@ func TestDeleteRootKey(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/rootkeys/"+rk.ID, nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -77,6 +79,7 @@ func TestUpdateRootKey(t *testing.T) {
 	body, _ := json.Marshal(updated)
 	req := httptest.NewRequest(http.MethodPut, "/v1/rootkeys/"+orig.ID, bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

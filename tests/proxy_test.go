@@ -76,6 +76,7 @@ func TestProxy(t *testing.T) {
 				req.Header.Set("X-Virtual-Key", k.ID)
 			}
 			req.Header.Set("X-API-Key", u.APIKey)
+			req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
@@ -135,6 +136,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			req := httptest.NewRequest(tc.method, "/v1/proxy/backend", nil)
 			req.Header.Set("X-Virtual-Key", k.ID)
 			req.Header.Set("X-API-Key", u.APIKey)
+			req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 

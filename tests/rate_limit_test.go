@@ -21,6 +21,7 @@ func setupRouterRL() http.Handler {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(rl.AuthMiddleware())
+		r.Use(rl.OrgCtxMiddleware())
 		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
 	return r
@@ -57,6 +58,7 @@ func TestRateLimitExceeded(t *testing.T) {
 	req1 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
 	req1.Header.Set("X-Virtual-Key", k.ID)
 	req1.Header.Set("X-API-Key", u.APIKey)
+	req1.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr1 := httptest.NewRecorder()
 	router.ServeHTTP(rr1, req1)
 	if rr1.Code != http.StatusOK {
@@ -66,6 +68,7 @@ func TestRateLimitExceeded(t *testing.T) {
 	req2 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
 	req2.Header.Set("X-Virtual-Key", k.ID)
 	req2.Header.Set("X-API-Key", u.APIKey)
+	req2.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr2 := httptest.NewRecorder()
 	router.ServeHTTP(rr2, req2)
 	if rr2.Code != http.StatusTooManyRequests {

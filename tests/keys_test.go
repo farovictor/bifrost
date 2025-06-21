@@ -37,6 +37,7 @@ func TestCreateKey(t *testing.T) {
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -67,6 +68,7 @@ func TestDeleteKey(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/"+k.ID, nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -99,6 +101,7 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2050-01-02T15:04:05Z","rate_limit":1}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader(payload))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
