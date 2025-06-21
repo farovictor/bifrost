@@ -13,21 +13,6 @@ make setup
 make run
 ```
 
-### Docker Compose
-```bash
-make compose-up
-```
-
-Stop it again with:
-
-```bash
-make compose-down
-```
-
-Use `./test-rate-limiting-compose.sh` to run the rate limit script against this environment.
-If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
-Then run `./test-rate-limiting.sh` to send a burst of requests against the `/v1/rate` endpoint.
-
 ## Running with Docker Compose
 
 The repository provides a `docker-compose.yml` that starts Bifrost together with
@@ -53,6 +38,16 @@ go test ./...
 See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
+## Example Request
+
+Once the server is running you can proxy a request with a virtual key:
+
+```bash
+curl -H "X-Virtual-Key: <key>" http://localhost:3333/v1/proxy/hello
+```
+
+You can also supply the key via the `key` query parameter instead of the header.
+
 ## Running Tests
 Run the suite with:
 ```bash
@@ -61,16 +56,18 @@ go test ./...
 
 ### Configuration via Environment Variables
 
-Bifrost can be configured through a handful of environment variables:
+Bifrost can be configured through the following environment variables:
 
-- `BIFROST_PORT` – HTTP port to bind to (defaults to `3333`).
-- `REDIS_ADDR` – address of the Redis instance (defaults to `localhost:6379`).
-- `REDIS_PASSWORD` – password for Redis, if required.
-- `REDIS_DB` – numeric Redis DB index to use (defaults to `0`).
-- `REDIS_PROTOCOL` – Redis protocol version (defaults to `3`).
-- `BIFROST_LOG_LEVEL` – log level (`debug`, `info`, `warn`, `error`), defaults to `info`.
-- `BIFROST_LOG_FORMAT` – log output format (`json` or `console`), defaults to `json`.
-- `BIFROST_ENABLE_METRICS` – set to `true` to expose Prometheus metrics.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BIFROST_PORT` | HTTP port to bind to | `3333` |
+| `REDIS_ADDR` | address of the Redis instance | `localhost:6379` |
+| `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
+| `REDIS_DB` | numeric Redis DB index to use | `0` |
+| `REDIS_PROTOCOL` | Redis protocol version | `3` |
+| `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
+| `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
+| `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 
@@ -80,6 +77,28 @@ You can export these variables or prefix them when starting the server.
 
 ```bash
 BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
+```
+
+### Virtual Key Format
+
+Virtual keys are represented by a small JSON object with the following fields:
+
+- `id` – unique identifier of the virtual key.
+- `scope` – allowed operations for the key (`read` or `write`).
+- `target` – service identifier that the key grants access to.
+- `expires_at` – RFC3339 timestamp when the key expires.
+- `rate_limit` – maximum requests per minute permitted.
+
+Example:
+
+```json
+{
+  "id": "mykey",
+  "scope": "read",
+  "target": "svc",
+  "expires_at": "2024-01-02T15:04:05Z",
+  "rate_limit": 60
+}
 ```
 
 # Core Features
