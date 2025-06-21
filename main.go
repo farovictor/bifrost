@@ -25,6 +25,9 @@ func main() {
 		r.Use(apiVersionCtx("v1"))
 		r.Get("/hello", v1.SayHello)
 
+		r.Post("/keys", routes.CreateKey)
+		r.Delete("/keys/{id}", routes.DeleteKey)
+
 		r.With(m.RateLimitMiddleware()).Post("/rate", v1.SayHello)
 	})
 
