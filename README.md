@@ -129,6 +129,10 @@ The commands interact with the running HTTP API by default. Before issuing
 keys you must register a root key (or update it later) and then associate services with it using
 `rootkey-add`, `rootkey-update` and `service-add`.
 
+All management endpoints now require authentication. Create an API user first
+using `bifrost user-add` (or the `/v1/users` HTTP route) to obtain an API key
+for subsequent requests.
+
 The `--target` flag on `issue` refers to the service ID provided when calling
 `service-add`.
 Use `--rate-limit` to specify the maximum requests per minute allowed for the issued key.
@@ -187,6 +191,9 @@ curl -H "X-Virtual-Key: demo-key" http://localhost:3333/v1/proxy/hello
 The CLI commands above are thin wrappers around a simple HTTP interface. The
 server listens on `http://localhost:3333` by default.
 
+All routes under `/v1` (except `/healthz` and `/version`) require a valid API
+key supplied via the `X-API-Key` or `Authorization` header.
+
 ### Issue a key
 POST `/v1/keys` with a JSON body describing the key. The response echoes the
 same JSON and returns status `201 Created`.
@@ -196,6 +203,7 @@ Example request:
 ```bash
 curl -X POST http://localhost:3333/v1/keys \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: <api_key>' \
   -d '{"id":"mykey","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z","rate_limit":60}'
 ```
 
@@ -216,7 +224,8 @@ DELETE `/v1/keys/<id>` to revoke a previously issued key. A successful request
 returns status `204 No Content`.
 
 ```bash
-curl -X DELETE http://localhost:3333/v1/keys/mykey
+curl -X DELETE http://localhost:3333/v1/keys/mykey \
+  -H 'X-API-Key: <api_key>'
 ```
 
 ### Add a service
@@ -227,11 +236,25 @@ Example:
 ```bash
 curl -X POST http://localhost:3333/v1/services \
   -H 'Content-Type: application/json' \
+  -H 'X-API-Key: <api_key>' \
   -d '{"id":"svc","endpoint":"http://localhost:8081","root_key_id":"root"}'
 ```
 
 ### Delete a service
-DELETE `/v1/services/<id>` to remove a service.
+DELETE `/v1/services/<id>` to remove a service. Include your API key header.
+
+### Create a user
+POST `/v1/users` with a JSON body containing the user ID. The response returns
+the generated API key.
+
+Example:
+
+```bash
+curl -X POST http://localhost:3333/v1/users \
+  -H 'Content-Type: application/json' \
+  -H 'X-API-Key: <api_key>' \
+  -d '{"id":"admin"}'
+```
 
 ### Metrics endpoint
 When metrics are enabled, GET `/metrics` returns Prometheus-formatted metrics.
