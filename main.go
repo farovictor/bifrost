@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	m "github.com/FokusInternal/bifrost/middlewares"
+	routes "github.com/FokusInternal/bifrost/routes"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,6 +16,8 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	r.Get("/healthz", routes.Healthz)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
