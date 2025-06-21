@@ -34,6 +34,11 @@ func TestCreateKeyInvalidJSON(t *testing.T) {
 
 func TestCreateKeyDuplicate(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.ServiceStore = services.NewStore()
+	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: "rk"}
+	if err := routes.ServiceStore.Create(svc); err != nil {
+		t.Fatalf("failed to seed service: %v", err)
+	}
 	k := keys.VirtualKey{ID: "dup", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour)}
 	if err := routes.KeyStore.Create(k); err != nil {
 		t.Fatalf("failed to seed store: %v", err)

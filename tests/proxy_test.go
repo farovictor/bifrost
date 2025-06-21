@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,7 +58,7 @@ func TestProxy(t *testing.T) {
 			if err := routes.ServiceStore.Create(svc); err != nil {
 				t.Fatalf("seed service: %v", err)
 			}
-			k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: "test", ExpiresAt: time.Now().Add(time.Hour)}
+			k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour)}
 			if err := routes.KeyStore.Create(k); err != nil {
 				t.Fatalf("seed key: %v", err)
 			}
@@ -78,6 +79,70 @@ func TestProxy(t *testing.T) {
 			}
 			if body := rr.Body.String(); body != "proxied" {
 				t.Fatalf("unexpected body: %s", body)
+			}
+		})
+	}
+}
+
+func TestProxyScopeEnforcement(t *testing.T) {
+	cases := []struct {
+		name     string
+		scope    string
+		method   string
+		wantCode int
+	}{
+		{name: "read-get", scope: keys.ScopeRead, method: http.MethodGet, wantCode: http.StatusOK},
+		{name: "read-post", scope: keys.ScopeRead, method: http.MethodPost, wantCode: http.StatusForbidden},
+		{name: "write-post", scope: keys.ScopeWrite, method: http.MethodPost, wantCode: http.StatusOK},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			routes.ServiceStore = services.NewStore()
+			routes.KeyStore = keys.NewStore()
+			routes.RootKeyStore = rootkeys.NewStore()
+
+			called := false
+			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				called = true
+				io.WriteString(w, "ok")
+			}))
+			defer backend.Close()
+
+			rk := rootkeys.RootKey{ID: "rk-" + tc.name, APIKey: "real"}
+			if err := routes.RootKeyStore.Create(rk); err != nil {
+				t.Fatalf("seed rootkey: %v", err)
+			}
+			svc := services.Service{ID: "svc-" + tc.name, Endpoint: backend.URL, RootKeyID: rk.ID}
+			if err := routes.ServiceStore.Create(svc); err != nil {
+				t.Fatalf("seed service: %v", err)
+			}
+			k := keys.VirtualKey{ID: "vk-" + tc.name, Target: svc.ID, Scope: tc.scope, ExpiresAt: time.Now().Add(time.Hour)}
+			if err := routes.KeyStore.Create(k); err != nil {
+				t.Fatalf("seed key: %v", err)
+			}
+
+			router := setupRouter()
+			req := httptest.NewRequest(tc.method, "/v1/proxy/backend", nil)
+			req.Header.Set("X-Virtual-Key", k.ID)
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, req)
+
+			if rr.Code != tc.wantCode {
+				t.Fatalf("expected %d, got %d", tc.wantCode, rr.Code)
+			}
+			if tc.wantCode == http.StatusForbidden {
+				if body := strings.TrimSpace(rr.Body.String()); body != "insufficient scope" {
+					t.Fatalf("unexpected body: %s", body)
+				}
+				if called {
+					t.Fatalf("backend should not be called")
+				}
+			} else {
+				if !called {
+					t.Fatalf("backend not called")
+				}
 			}
 		})
 	}
