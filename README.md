@@ -70,6 +70,41 @@ go run ./cmd/bifrost revoke mykey
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
 
+## HTTP API
+The CLI commands above are thin wrappers around a simple HTTP interface. The
+server listens on `http://localhost:3333` by default.
+
+### Issue a key
+POST `/v1/keys` with a JSON body describing the key. The response echoes the
+same JSON and returns status `201 Created`.
+
+Example request:
+
+```bash
+curl -X POST http://localhost:3333/v1/keys \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"mykey","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z"}'
+```
+
+Expected JSON format:
+
+```json
+{
+  "id": "mykey",
+  "scope": "read",
+  "target": "svc",
+  "expires_at": "2024-01-02T15:04:05Z"
+}
+```
+
+### Revoke a key
+DELETE `/v1/keys/<id>` to revoke a previously issued key. A successful request
+returns status `204 No Content`.
+
+```bash
+curl -X DELETE http://localhost:3333/v1/keys/mykey
+```
+
 
 # Planned Extensions
 - Integration with Open Policy Agent (OPA) for dynamic authorization.
