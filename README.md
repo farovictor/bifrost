@@ -61,16 +61,18 @@ go test ./...
 
 ### Configuration via Environment Variables
 
-Bifrost can be configured through a handful of environment variables:
+Bifrost can be configured through the following environment variables:
 
-- `BIFROST_PORT` – HTTP port to bind to (defaults to `3333`).
-- `REDIS_ADDR` – address of the Redis instance (defaults to `localhost:6379`).
-- `REDIS_PASSWORD` – password for Redis, if required.
-- `REDIS_DB` – numeric Redis DB index to use (defaults to `0`).
-- `REDIS_PROTOCOL` – Redis protocol version (defaults to `3`).
-- `BIFROST_LOG_LEVEL` – log level (`debug`, `info`, `warn`, `error`), defaults to `info`.
-- `BIFROST_LOG_FORMAT` – log output format (`json` or `console`), defaults to `json`.
-- `BIFROST_ENABLE_METRICS` – set to `true` to expose Prometheus metrics.
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `BIFROST_PORT` | HTTP port to bind to | `3333` |
+| `REDIS_ADDR` | address of the Redis instance | `localhost:6379` |
+| `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
+| `REDIS_DB` | numeric Redis DB index to use | `0` |
+| `REDIS_PROTOCOL` | Redis protocol version | `3` |
+| `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
+| `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
+| `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 
