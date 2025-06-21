@@ -58,7 +58,7 @@ func TestProxy(t *testing.T) {
 			if err := routes.ServiceStore.Create(svc); err != nil {
 				t.Fatalf("seed service: %v", err)
 			}
-			k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour)}
+			k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 			if err := routes.KeyStore.Create(k); err != nil {
 				t.Fatalf("seed key: %v", err)
 			}
@@ -118,7 +118,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			if err := routes.ServiceStore.Create(svc); err != nil {
 				t.Fatalf("seed service: %v", err)
 			}
-			k := keys.VirtualKey{ID: "vk-" + tc.name, Target: svc.ID, Scope: tc.scope, ExpiresAt: time.Now().Add(time.Hour)}
+			k := keys.VirtualKey{ID: "vk-" + tc.name, Target: svc.ID, Scope: tc.scope, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 			if err := routes.KeyStore.Create(k); err != nil {
 				t.Fatalf("seed key: %v", err)
 			}

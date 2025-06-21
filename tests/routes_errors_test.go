@@ -39,7 +39,7 @@ func TestCreateKeyDuplicate(t *testing.T) {
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	k := keys.VirtualKey{ID: "dup", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour)}
+	k := keys.VirtualKey{ID: "dup", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestCreateKeyMissingService(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "nosvc", Scope: "read", Target: "missing", ExpiresAt: time.Now().Add(time.Hour)}
+	k := keys.VirtualKey{ID: "nosvc", Scope: "read", Target: "missing", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
@@ -114,7 +114,7 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	}
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "badscope", Scope: "unknown", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour)}
+	k := keys.VirtualKey{ID: "badscope", Scope: "unknown", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
@@ -142,7 +142,7 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	}
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "emptyscope", Scope: "", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour)}
+	k := keys.VirtualKey{ID: "emptyscope", Scope: "", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
@@ -170,7 +170,7 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	}
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "expired", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(-time.Hour)}
+	k := keys.VirtualKey{ID: "expired", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()

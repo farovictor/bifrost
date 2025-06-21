@@ -25,6 +25,10 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid scope", http.StatusBadRequest)
 		return
 	}
+	if k.RateLimit <= 0 {
+		http.Error(w, "invalid rate_limit", http.StatusBadRequest)
+		return
+	}
 	if !k.ExpiresAt.After(time.Now()) {
 		http.Error(w, "expires_at must be in the future", http.StatusBadRequest)
 		return

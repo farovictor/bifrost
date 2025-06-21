@@ -3,9 +3,11 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/FokusInternal/bifrost/config"
+	routes "github.com/FokusInternal/bifrost/routes"
 	redis "github.com/redis/go-redis/v9"
 )
 
@@ -17,31 +19,62 @@ var rdb = redis.NewClient(&redis.Options{
 	Protocol: config.RedisProtocol(),
 })
 
+type localCounter struct {
+	mu   sync.Mutex
+	data map[string]struct {
+		count int
+		ts    time.Time
+	}
+}
+
+var localRL = &localCounter{data: make(map[string]struct {
+	count int
+	ts    time.Time
+})}
+
+func (l *localCounter) incr(key string) int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	e := l.data[key]
+	if time.Since(e.ts) >= time.Minute {
+		e.count = 0
+		e.ts = time.Now()
+	}
+	e.count++
+	l.data[key] = e
+	return e.count
+}
+
 func RateLimitMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			apiKey := r.Header.Get("X-API-Key")
-			if apiKey == "" {
-				http.Error(w, "Missing API key", http.StatusUnauthorized)
+			keyID := r.Header.Get("X-Virtual-Key")
+			if keyID == "" {
+				keyID = r.URL.Query().Get("key")
+			}
+			if keyID == "" {
+				next.ServeHTTP(w, r)
 				return
 			}
 
-			// TODO: This time constraint should be personalized and consider each user quota/plan
-			key := fmt.Sprintf("ratelimit:%s:%d", apiKey, time.Now().Unix()/60) // per minute
-			count, err := rdb.Incr(r.Context(), key).Result()
-
+			vk, err := routes.KeyStore.Get(keyID)
 			if err != nil {
-				http.Error(w, "Redis error", http.StatusInternalServerError)
+				next.ServeHTTP(w, r)
 				return
 			}
 
-			if count == 1 {
-				rdb.Expire(r.Context(), key, time.Minute)
+			redisKey := fmt.Sprintf("ratelimit:%s:%d", keyID, time.Now().Unix()/60)
+			count, err := rdb.Incr(r.Context(), redisKey).Result()
+			if err != nil {
+				// fallback to local counter when redis is unavailable
+				count = int64(localRL.incr(redisKey))
+			} else {
+				if count == 1 {
+					rdb.Expire(r.Context(), redisKey, time.Minute)
+				}
 			}
-
-			// TODO: This counter should be personalized and consider each user quota/plan
-			if count > 1000 {
+			if int(count) > vk.RateLimit {
 				http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 				return
 			}

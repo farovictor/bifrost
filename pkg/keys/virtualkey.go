@@ -9,4 +9,5 @@ type VirtualKey struct {
 	Scope     string    `json:"scope"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Target    string    `json:"target"`
+	RateLimit int       `json:"rate_limit"`
 }

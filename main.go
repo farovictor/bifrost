@@ -37,7 +37,7 @@ func main() {
 
 		r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
 
-		r.Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
 
 	http.ListenAndServe(config.ServerPort(), r)
