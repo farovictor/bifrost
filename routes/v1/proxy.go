@@ -18,6 +18,14 @@ import (
 func Proxy(w http.ResponseWriter, r *http.Request) {
 	keyID := r.Header.Get("X-Virtual-Key")
 	if keyID == "" {
+		q := r.URL.Query()
+		keyID = q.Get("key")
+		if keyID != "" {
+			q.Del("key")
+			r.URL.RawQuery = q.Encode()
+		}
+	}
+	if keyID == "" {
 		http.Error(w, "missing key", http.StatusUnauthorized)
 		return
 	}
