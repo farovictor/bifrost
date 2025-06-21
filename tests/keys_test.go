@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
 )
@@ -17,7 +18,12 @@ import (
 func TestCreateKey(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
-	svc := services.Service{ID: "svc", Endpoint: "http://example.com", APIKey: "k"}
+	routes.RootKeyStore = rootkeys.NewStore()
+	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
+	if err := routes.RootKeyStore.Create(rk); err != nil {
+		t.Fatalf("seed rootkey: %v", err)
+	}
+	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: rk.ID}
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
@@ -67,7 +73,12 @@ func TestDeleteKey(t *testing.T) {
 func TestCreateKeyExampleJSON(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
-	svc := services.Service{ID: "svc", Endpoint: "http://example.com", APIKey: "k"}
+	routes.RootKeyStore = rootkeys.NewStore()
+	rk := rootkeys.RootKey{ID: "rk2", APIKey: "k"}
+	if err := routes.RootKeyStore.Create(rk); err != nil {
+		t.Fatalf("seed rootkey: %v", err)
+	}
+	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: rk.ID}
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}

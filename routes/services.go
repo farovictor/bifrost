@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 )
 
@@ -17,6 +18,14 @@ func CreateService(w http.ResponseWriter, r *http.Request) {
 	var s services.Service
 	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if _, err := RootKeyStore.Get(s.RootKeyID); err != nil {
+		if err == rootkeys.ErrKeyNotFound {
+			http.Error(w, "root key not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if err := ServiceStore.Create(s); err != nil {

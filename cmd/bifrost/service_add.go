@@ -13,16 +13,16 @@ import (
 )
 
 var (
-	serviceAddID       string
-	serviceAddEndpoint string
-	serviceAddAPIKey   string
+	serviceAddID        string
+	serviceAddEndpoint  string
+	serviceAddRootKeyID string
 )
 
 var serviceAddCmd = &cobra.Command{
 	Use:   "service-add",
 	Short: "Add a service",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		svc := services.Service{ID: serviceAddID, Endpoint: serviceAddEndpoint, APIKey: serviceAddAPIKey}
+		svc := services.Service{ID: serviceAddID, Endpoint: serviceAddEndpoint, RootKeyID: serviceAddRootKeyID}
 		body, err := json.Marshal(svc)
 		if err != nil {
 			return err
@@ -44,9 +44,9 @@ var serviceAddCmd = &cobra.Command{
 func init() {
 	serviceAddCmd.Flags().StringVar(&serviceAddID, "id", "", "service id")
 	serviceAddCmd.Flags().StringVar(&serviceAddEndpoint, "endpoint", "", "service endpoint")
-	serviceAddCmd.Flags().StringVar(&serviceAddAPIKey, "apikey", "", "API key")
+	serviceAddCmd.Flags().StringVar(&serviceAddRootKeyID, "rootkey", "", "root key id")
 	serviceAddCmd.MarkFlagRequired("id")
 	serviceAddCmd.MarkFlagRequired("endpoint")
-	serviceAddCmd.MarkFlagRequired("apikey")
+	serviceAddCmd.MarkFlagRequired("rootkey")
 	rootCmd.AddCommand(serviceAddCmd)
 }
