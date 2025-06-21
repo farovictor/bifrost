@@ -12,7 +12,7 @@ build:
 
 # run: Execute the main application using Go 1.23.8
 run:
-        go1.23.8 run main.go
+	go1.23.8 run main.go
 
 # compose-up: start Docker Compose environment
 compose-up:
