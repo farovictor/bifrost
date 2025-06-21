@@ -11,13 +11,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var userAddID string
+var (
+	userAddID      string
+	userAddOrgID   string
+	userAddOrgName string
+	userAddRole    string
+)
 
 var userAddCmd = &cobra.Command{
 	Use:   "user-add",
-	Short: "Create a user and generate an API key",
+	Short: "Create a user and optionally register an organization",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		payload := map[string]string{"id": userAddID}
+		payload := map[string]string{
+			"id":       userAddID,
+			"org_id":   userAddOrgID,
+			"org_name": userAddOrgName,
+			"role":     userAddRole,
+		}
 		body, err := json.Marshal(payload)
 		if err != nil {
 			return err
@@ -38,6 +48,9 @@ var userAddCmd = &cobra.Command{
 
 func init() {
 	userAddCmd.Flags().StringVar(&userAddID, "id", "", "user id")
+	userAddCmd.Flags().StringVar(&userAddOrgID, "org-id", "", "organization id")
+	userAddCmd.Flags().StringVar(&userAddOrgName, "org-name", "", "organization name")
+	userAddCmd.Flags().StringVar(&userAddRole, "role", "", "membership role")
 	userAddCmd.MarkFlagRequired("id")
 	rootCmd.AddCommand(userAddCmd)
 }
