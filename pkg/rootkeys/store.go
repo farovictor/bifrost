@@ -49,6 +49,17 @@ func (s *Store) Delete(id string) error {
 	return nil
 }
 
+// Update replaces an existing RootKey.
+func (s *Store) Update(k RootKey) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.keys[k.ID]; !ok {
+		return ErrKeyNotFound
+	}
+	s.keys[k.ID] = k
+	return nil
+}
+
 // Error definitions for store operations.
 var (
 	ErrKeyNotFound = errors.New("root key not found")

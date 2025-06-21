@@ -58,8 +58,8 @@ Fast, type-safe, and built for performance and extensibility.
 ## CLI Usage
 You can manage virtual keys from the command line with the `bifrost` tool.
 The commands interact with the running HTTP API by default. Before issuing
-keys you must register a root key and then associate services with it using
-`rootkey-add` and `service-add`.
+keys you must register a root key (or update it later) and then associate services with it using
+`rootkey-add`, `rootkey-update` and `service-add`.
 
 The `--target` flag on `issue` refers to the service ID provided when calling
 `service-add`.
@@ -67,6 +67,9 @@ The `--target` flag on `issue` refers to the service ID provided when calling
 ```bash
 # register a root key
 go run ./cmd/bifrost rootkey-add --id root --apikey SECRET
+
+# update the root key without downtime
+go run ./cmd/bifrost rootkey-update --id root --apikey NEWSECRET
 
 # register a service
 go run ./cmd/bifrost service-add --id svc --endpoint http://localhost:8081 --rootkey root

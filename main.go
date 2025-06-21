@@ -29,6 +29,7 @@ func main() {
 		r.Delete("/keys/{id}", routes.DeleteKey)
 
 		r.Post("/rootkeys", routes.CreateRootKey)
+		r.Put("/rootkeys/{id}", routes.UpdateRootKey)
 		r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
 
 		r.Post("/services", routes.CreateService)

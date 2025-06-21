@@ -52,3 +52,29 @@ func TestDeleteRootKey(t *testing.T) {
 		t.Fatalf("root key was not deleted")
 	}
 }
+
+func TestUpdateRootKey(t *testing.T) {
+	routes.RootKeyStore = rootkeys.NewStore()
+	orig := rootkeys.RootKey{ID: "rk", APIKey: "old"}
+	if err := routes.RootKeyStore.Create(orig); err != nil {
+		t.Fatalf("seed rootkey: %v", err)
+	}
+	router := setupRouter()
+
+	updated := rootkeys.RootKey{ID: "rk", APIKey: "new"}
+	body, _ := json.Marshal(updated)
+	req := httptest.NewRequest(http.MethodPut, "/v1/rootkeys/"+orig.ID, bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+	rk, err := routes.RootKeyStore.Get(orig.ID)
+	if err != nil {
+		t.Fatalf("get rootkey: %v", err)
+	}
+	if rk.APIKey != updated.APIKey {
+		t.Fatalf("update did not persist")
+	}
+}

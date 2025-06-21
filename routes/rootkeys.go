@@ -47,3 +47,31 @@ func DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// UpdateRootKey handles PUT /rootkeys/{id} to replace a stored root key.
+func UpdateRootKey(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var k rootkeys.RootKey
+	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	// ensure path id and body id match
+	if k.ID == "" {
+		k.ID = id
+	} else if k.ID != id {
+		http.Error(w, "id mismatch", http.StatusBadRequest)
+		return
+	}
+	if err := RootKeyStore.Update(k); err != nil {
+		switch err {
+		case rootkeys.ErrKeyNotFound:
+			http.Error(w, "not found", http.StatusNotFound)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(k)
+}
