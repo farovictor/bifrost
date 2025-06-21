@@ -6,6 +6,7 @@ import (
 
 	"github.com/FokusInternal/bifrost/config"
 	rl "github.com/FokusInternal/bifrost/middlewares"
+	"github.com/FokusInternal/bifrost/pkg/logging"
 	routes "github.com/FokusInternal/bifrost/routes"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
@@ -13,9 +14,11 @@ import (
 )
 
 func main() {
+	logging.Setup()
+
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
+	r.Use(rl.LoggingMiddleware())
 	r.Use(middleware.Recoverer)
 
 	r.Get("/healthz", routes.Healthz)

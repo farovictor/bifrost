@@ -30,6 +30,10 @@ Bifrost can be configured through a handful of environment variables:
 - `REDIS_PASSWORD` – password for Redis, if required.
 - `REDIS_DB` – numeric Redis DB index to use (defaults to `0`).
 - `REDIS_PROTOCOL` – Redis protocol version (defaults to `3`).
+- `BIFROST_LOG_LEVEL` – log level (`debug`, `info`, `warn`, `error`), defaults to `info`.
+- `BIFROST_LOG_FORMAT` – log output format (`json` or `console`), defaults to `json`.
+
+Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 
 You can export these variables or prefix them when starting the server.
 

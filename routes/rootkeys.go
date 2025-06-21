@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/FokusInternal/bifrost/pkg/logging"
 	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 )
 
@@ -28,6 +29,7 @@ func CreateRootKey(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("root_key_id", k.ID).Msg("created root key")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(k)
@@ -45,6 +47,7 @@ func DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("root_key_id", id).Msg("deleted root key")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -72,6 +75,7 @@ func UpdateRootKey(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("root_key_id", k.ID).Msg("updated root key")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(k)
 }
