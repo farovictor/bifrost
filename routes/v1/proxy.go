@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FokusInternal/bifrost/config"
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/metrics"
 	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
@@ -44,6 +46,10 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 	if time.Now().After(k.ExpiresAt) {
 		http.Error(w, "key expired", http.StatusUnauthorized)
 		return
+	}
+
+	if config.MetricsEnabled() {
+		metrics.KeyUsageTotal.WithLabelValues(k.ID).Inc()
 	}
 
 	switch k.Scope {

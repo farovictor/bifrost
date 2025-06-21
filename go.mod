@@ -7,6 +7,7 @@ github.com/go-chi/chi/v5 v5.2.1
 github.com/redis/go-redis/v9 v9.9.0
 github.com/spf13/cobra v1.9.1
 github.com/rs/zerolog v1.30.0
+github.com/prometheus/client_golang v1.17.0
 )
 
 require (
