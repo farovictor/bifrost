@@ -12,14 +12,19 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateKeyInvalidJSON(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	router := setupRouter()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader("{bad"))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -35,6 +40,9 @@ func TestCreateKeyInvalidJSON(t *testing.T) {
 func TestCreateKeyDuplicate(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: "rk"}
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
@@ -47,6 +55,7 @@ func TestCreateKeyDuplicate(t *testing.T) {
 	body, _ := json.Marshal(k)
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -61,9 +70,13 @@ func TestCreateKeyDuplicate(t *testing.T) {
 
 func TestDeleteKeyNotFound(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	router := setupRouter()
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/unknown", nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -79,11 +92,15 @@ func TestDeleteKeyNotFound(t *testing.T) {
 func TestCreateKeyMissingService(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	router := setupRouter()
 
 	k := keys.VirtualKey{ID: "nosvc", Scope: "read", Target: "missing", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -104,6 +121,9 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-scope", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -117,6 +137,7 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	k := keys.VirtualKey{ID: "badscope", Scope: "unknown", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -132,6 +153,9 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-empty", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -145,6 +169,7 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	k := keys.VirtualKey{ID: "emptyscope", Scope: "", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -160,6 +185,9 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-exp", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -173,6 +201,7 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	k := keys.VirtualKey{ID: "expired", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

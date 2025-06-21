@@ -8,16 +8,21 @@ import (
 	"testing"
 
 	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	router := setupRouter()
 
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "secret"}
 	body, _ := json.Marshal(rk)
 	req := httptest.NewRequest(http.MethodPost, "/v1/rootkeys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -36,12 +41,16 @@ func TestCreateRootKey(t *testing.T) {
 
 func TestDeleteRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "dead", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/rootkeys/"+rk.ID, nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -55,6 +64,9 @@ func TestDeleteRootKey(t *testing.T) {
 
 func TestUpdateRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	orig := rootkeys.RootKey{ID: "rk", APIKey: "old"}
 	if err := routes.RootKeyStore.Create(orig); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -64,6 +76,7 @@ func TestUpdateRootKey(t *testing.T) {
 	updated := rootkeys.RootKey{ID: "rk", APIKey: "new"}
 	body, _ := json.Marshal(updated)
 	req := httptest.NewRequest(http.MethodPut, "/v1/rootkeys/"+orig.ID, bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

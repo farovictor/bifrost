@@ -12,6 +12,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
@@ -19,6 +20,9 @@ func TestCreateKey(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -32,6 +36,7 @@ func TestCreateKey(t *testing.T) {
 	k := keys.VirtualKey{ID: "abc", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -51,6 +56,9 @@ func TestCreateKey(t *testing.T) {
 
 func TestDeleteKey(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	k := keys.VirtualKey{ID: "dead", Scope: "x", Target: "svc", ExpiresAt: time.Now(), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
@@ -58,6 +66,7 @@ func TestDeleteKey(t *testing.T) {
 
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/"+k.ID, nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -74,6 +83,9 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk2", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -86,6 +98,7 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 
 	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2050-01-02T15:04:05Z","rate_limit":1}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader(payload))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

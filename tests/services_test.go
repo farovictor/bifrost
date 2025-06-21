@@ -9,12 +9,16 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateService(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -24,6 +28,7 @@ func TestCreateService(t *testing.T) {
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: rk.ID}
 	body, _ := json.Marshal(svc)
 	req := httptest.NewRequest(http.MethodPost, "/v1/services", bytes.NewReader(body))
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -43,6 +48,9 @@ func TestCreateService(t *testing.T) {
 func TestDeleteService(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rkdead", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
@@ -53,6 +61,7 @@ func TestDeleteService(t *testing.T) {
 	}
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/services/"+svc.ID, nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

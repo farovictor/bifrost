@@ -12,6 +12,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
@@ -19,6 +20,7 @@ import (
 func setupRouterRL() http.Handler {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(rl.AuthMiddleware())
 		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
 	return r
@@ -28,6 +30,9 @@ func TestRateLimitExceeded(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
@@ -51,6 +56,7 @@ func TestRateLimitExceeded(t *testing.T) {
 
 	req1 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
 	req1.Header.Set("X-Virtual-Key", k.ID)
+	req1.Header.Set("X-API-Key", u.APIKey)
 	rr1 := httptest.NewRecorder()
 	router.ServeHTTP(rr1, req1)
 	if rr1.Code != http.StatusOK {
@@ -59,6 +65,7 @@ func TestRateLimitExceeded(t *testing.T) {
 
 	req2 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
 	req2.Header.Set("X-Virtual-Key", k.ID)
+	req2.Header.Set("X-API-Key", u.APIKey)
 	rr2 := httptest.NewRecorder()
 	router.ServeHTTP(rr2, req2)
 	if rr2.Code != http.StatusTooManyRequests {

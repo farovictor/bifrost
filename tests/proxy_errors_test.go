@@ -11,6 +11,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
@@ -18,9 +19,13 @@ func TestProxyMissingKey(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -36,10 +41,14 @@ func TestProxyInvalidKey(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", "bad")
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -55,6 +64,9 @@ func TestProxyExpiredKey(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 
 	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
@@ -64,6 +76,7 @@ func TestProxyExpiredKey(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -79,6 +92,9 @@ func TestProxyScopeViolation(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 
 	called := false
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +119,7 @@ func TestProxyScopeViolation(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodPost, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
