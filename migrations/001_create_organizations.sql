@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS organizations (
+    id VARCHAR(255) PRIMARY KEY,
+    name TEXT NOT NULL
+);
