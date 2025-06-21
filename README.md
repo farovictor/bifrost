@@ -265,6 +265,20 @@ the `key` query parameter containing a previously issued key. Bifrost injects
 the real API key, strips the virtual key from the forwarded request and forwards
 the request to the mapped service.
 
+## Organizations and Memberships
+
+Phase 1 introduces database-ready models for multi-tenant setups. An
+**organization** groups related services and users, while a **membership** links
+a user to an organization with a specific role. API endpoints for managing these
+objects are not available yet but SQL migrations and in-memory stores are in
+place.
+
+### Roles
+
+- **Owner** – full control over the organization and its members.
+- **Admin** – manage resources but cannot remove or demote owners.
+- **Member** – limited to resources explicitly granted.
+
 
 # Planned Extensions
 - Integration with Open Policy Agent (OPA) for dynamic authorization.
