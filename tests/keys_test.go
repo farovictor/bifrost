@@ -29,7 +29,7 @@ func TestCreateKey(t *testing.T) {
 	}
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "abc", Scope: "test", Target: svc.ID, ExpiresAt: time.Now()}
+	k := keys.VirtualKey{ID: "abc", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour)}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
@@ -84,7 +84,7 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 	}
 	router := setupRouter()
 
-	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z"}`
+	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2050-01-02T15:04:05Z"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader(payload))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -98,7 +98,7 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	expTime, _ := time.Parse(time.RFC3339, "2024-01-02T15:04:05Z")
+	expTime, _ := time.Parse(time.RFC3339, "2050-01-02T15:04:05Z")
 	if resp.ID != "jsonex" || !resp.ExpiresAt.Equal(expTime) || resp.Scope != "read" || resp.Target != "svc" {
 		t.Fatalf("unexpected response: %#v", resp)
 	}
