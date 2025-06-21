@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/services"
 )
 
 // KeyStore holds the active VirtualKeys in memory.
@@ -17,6 +18,14 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 	var k keys.VirtualKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if _, err := ServiceStore.Get(k.Target); err != nil {
+		if err == services.ErrServiceNotFound {
+			http.Error(w, "service not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if err := KeyStore.Create(k); err != nil {

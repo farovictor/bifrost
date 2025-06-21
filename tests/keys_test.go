@@ -10,14 +10,20 @@ import (
 	"time"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
 )
 
 func TestCreateKey(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.ServiceStore = services.NewStore()
+	svc := services.Service{ID: "svc", Endpoint: "http://example.com", APIKey: "k"}
+	if err := routes.ServiceStore.Create(svc); err != nil {
+		t.Fatalf("failed to seed service: %v", err)
+	}
 	router := setupRouter()
 
-	k := keys.VirtualKey{ID: "abc", Scope: "test", Target: "svc", ExpiresAt: time.Now()}
+	k := keys.VirtualKey{ID: "abc", Scope: "test", Target: svc.ID, ExpiresAt: time.Now()}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	rr := httptest.NewRecorder()
@@ -60,6 +66,11 @@ func TestDeleteKey(t *testing.T) {
 
 func TestCreateKeyExampleJSON(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
+	routes.ServiceStore = services.NewStore()
+	svc := services.Service{ID: "svc", Endpoint: "http://example.com", APIKey: "k"}
+	if err := routes.ServiceStore.Create(svc); err != nil {
+		t.Fatalf("failed to seed service: %v", err)
+	}
 	router := setupRouter()
 
 	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z"}`
