@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/FokusInternal/bifrost/config"
-	m "github.com/FokusInternal/bifrost/middlewares"
+	rl "github.com/FokusInternal/bifrost/middlewares"
 	routes "github.com/FokusInternal/bifrost/routes"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
@@ -35,7 +35,7 @@ func main() {
 		r.Post("/services", routes.CreateService)
 		r.Delete("/services/{id}", routes.DeleteService)
 
-		r.With(m.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+		r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
 
 		r.Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
