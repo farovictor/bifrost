@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -54,5 +55,29 @@ func TestDeleteKey(t *testing.T) {
 
 	if _, err := routes.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
 		t.Fatalf("key was not deleted")
+	}
+}
+
+func TestCreateKeyExampleJSON(t *testing.T) {
+	routes.KeyStore = keys.NewStore()
+	router := setupRouter()
+
+	payload := `{"id":"jsonex","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader(payload))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d", rr.Code)
+	}
+
+	var resp keys.VirtualKey
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	expTime, _ := time.Parse(time.RFC3339, "2024-01-02T15:04:05Z")
+	if resp.ID != "jsonex" || !resp.ExpiresAt.Equal(expTime) || resp.Scope != "read" || resp.Target != "svc" {
+		t.Fatalf("unexpected response: %#v", resp)
 	}
 }
