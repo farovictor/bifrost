@@ -18,6 +18,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	r.Get("/healthz", routes.Healthz)
+	r.Get("/version", routes.Version)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
