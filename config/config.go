@@ -53,3 +53,14 @@ func RedisProtocol() int {
 	}
 	return 3
 }
+
+// MetricsEnabled determines whether Prometheus metrics should be exposed.
+// It checks the BIFROST_ENABLE_METRICS environment variable for a truthy value.
+func MetricsEnabled() bool {
+	switch os.Getenv("BIFROST_ENABLE_METRICS") {
+	case "1", "true", "TRUE", "True", "yes", "YES":
+		return true
+	default:
+		return false
+	}
+}

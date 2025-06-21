@@ -32,6 +32,7 @@ Bifrost can be configured through a handful of environment variables:
 - `REDIS_PROTOCOL` – Redis protocol version (defaults to `3`).
 - `BIFROST_LOG_LEVEL` – log level (`debug`, `info`, `warn`, `error`), defaults to `info`.
 - `BIFROST_LOG_FORMAT` – log output format (`json` or `console`), defaults to `json`.
+- `BIFROST_ENABLE_METRICS` – set to `true` to expose Prometheus metrics.
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 
@@ -56,6 +57,12 @@ Retrieve and manage secrets securely with native Vault support.
 Deploy Bifrost as a Kubernetes operator with CRD support for virtual key management.
 ## Audit & Observability
 Log, trace, and monitor access by key, user, origin, or service.
+When `BIFROST_ENABLE_METRICS` is set, Bifrost exposes Prometheus metrics at
+`/metrics`. Available metrics are:
+
+- `request_total` – total HTTP requests processed.
+- `request_duration_seconds` – histogram of request durations.
+- `key_usage_total` – counter of virtual key usages.
 ## Golang First
 Fast, type-safe, and built for performance and extensibility.
 
@@ -162,6 +169,9 @@ curl -X POST http://localhost:3333/v1/services \
 
 ### Delete a service
 DELETE `/v1/services/<id>` to remove a service.
+
+### Metrics endpoint
+When metrics are enabled, GET `/metrics` returns Prometheus-formatted metrics.
 
 ### Proxy using a virtual key
 Send any request to `/v1/proxy/<path>` with either the `X-Virtual-Key` header or

@@ -7,18 +7,26 @@ import (
 	"github.com/FokusInternal/bifrost/config"
 	rl "github.com/FokusInternal/bifrost/middlewares"
 	"github.com/FokusInternal/bifrost/pkg/logging"
+	"github.com/FokusInternal/bifrost/pkg/metrics"
 	routes "github.com/FokusInternal/bifrost/routes"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
 	logging.Setup()
 
+	if config.MetricsEnabled() {
+		metrics.Register(prometheus.DefaultRegisterer)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(rl.LoggingMiddleware())
+	r.Use(rl.MetricsMiddleware())
 	r.Use(middleware.Recoverer)
 
 	r.Get("/healthz", routes.Healthz)
@@ -42,6 +50,10 @@ func main() {
 
 		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
+
+	if config.MetricsEnabled() {
+		r.Handle("/metrics", promhttp.Handler())
+	}
 
 	http.ListenAndServe(config.ServerPort(), r)
 }
