@@ -20,6 +20,8 @@ func setupRouter() http.Handler {
 		r.Get("/hello", v1.SayHello)
 		r.Post("/keys", routes.CreateKey)
 		r.Delete("/keys/{id}", routes.DeleteKey)
+		r.Post("/rootkeys", routes.CreateRootKey)
+		r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
 		r.Post("/services", routes.CreateService)
 		r.Delete("/services/{id}", routes.DeleteService)
 		r.Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))

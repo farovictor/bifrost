@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
 )
@@ -46,6 +47,16 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rk, err := routes.RootKeyStore.Get(svc.RootKeyID)
+	if err != nil {
+		if err == rootkeys.ErrKeyNotFound {
+			http.Error(w, "root key not found", http.StatusInternalServerError)
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	target, err := url.Parse(svc.Endpoint)
 	if err != nil {
 		http.Error(w, "bad service endpoint", http.StatusInternalServerError)
@@ -56,7 +67,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 	prefix := "/v1/proxy"
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, prefix)
 
-	r.Header.Set("X-API-Key", svc.APIKey)
+	r.Header.Set("X-API-Key", rk.APIKey)
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.Host = target.Host

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
 )
@@ -15,6 +16,7 @@ import (
 func TestProxy(t *testing.T) {
 	routes.ServiceStore = services.NewStore()
 	routes.KeyStore = keys.NewStore()
+	routes.RootKeyStore = rootkeys.NewStore()
 
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-API-Key") != "real" {
@@ -27,7 +29,11 @@ func TestProxy(t *testing.T) {
 	}))
 	defer backend.Close()
 
-	svc := services.Service{ID: "svc", Endpoint: backend.URL, APIKey: "real"}
+	rk := rootkeys.RootKey{ID: "rk", APIKey: "real"}
+	if err := routes.RootKeyStore.Create(rk); err != nil {
+		t.Fatalf("seed rootkey: %v", err)
+	}
+	svc := services.Service{ID: "svc", Endpoint: backend.URL, RootKeyID: rk.ID}
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
