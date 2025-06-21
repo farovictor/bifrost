@@ -11,6 +11,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
 
@@ -29,6 +30,9 @@ func TestProxy(t *testing.T) {
 			routes.ServiceStore = services.NewStore()
 			routes.KeyStore = keys.NewStore()
 			routes.RootKeyStore = rootkeys.NewStore()
+			routes.UserStore = users.NewStore()
+			u := users.User{ID: "u", APIKey: "secret"}
+			routes.UserStore.Create(u)
 
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("X-API-Key") != "real" {
@@ -71,6 +75,7 @@ func TestProxy(t *testing.T) {
 			} else {
 				req.Header.Set("X-Virtual-Key", k.ID)
 			}
+			req.Header.Set("X-API-Key", u.APIKey)
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
@@ -102,6 +107,9 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			routes.ServiceStore = services.NewStore()
 			routes.KeyStore = keys.NewStore()
 			routes.RootKeyStore = rootkeys.NewStore()
+			routes.UserStore = users.NewStore()
+			u := users.User{ID: "u", APIKey: "secret"}
+			routes.UserStore.Create(u)
 
 			called := false
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +134,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			router := setupRouter()
 			req := httptest.NewRequest(tc.method, "/v1/proxy/backend", nil)
 			req.Header.Set("X-Virtual-Key", k.ID)
+			req.Header.Set("X-API-Key", u.APIKey)
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 

@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
@@ -17,7 +19,9 @@ func setupRouter() http.Handler {
 	r.Get("/healthz", routes.Healthz)
 	r.Get("/version", routes.Version)
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(rl.AuthMiddleware())
 		r.Get("/hello", v1.SayHello)
+		r.Post("/users", routes.CreateUser)
 		r.Post("/keys", routes.CreateKey)
 		r.Delete("/keys/{id}", routes.DeleteKey)
 		r.Post("/rootkeys", routes.CreateRootKey)
@@ -66,8 +70,12 @@ func TestVersion(t *testing.T) {
 }
 
 func TestV1Hello(t *testing.T) {
+	routes.UserStore = users.NewStore()
+	u := users.User{ID: "u", APIKey: "secret"}
+	routes.UserStore.Create(u)
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)
+	req.Header.Set("X-API-Key", u.APIKey)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

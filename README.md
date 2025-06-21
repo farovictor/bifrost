@@ -154,10 +154,16 @@ go run ./cmd/bifrost service-delete svc
 
 # delete the root key
 go run ./cmd/bifrost rootkey-delete root
+
+# create an API user
+go run ./cmd/bifrost user-add --id admin
 ```
 
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
+
+The generated API key must be provided in the `X-API-Key` or `Authorization`
+header when calling any `/v1` endpoint.
 
 ### End-to-End Example
 Below is a minimal workflow showing how to register a service, issue a key and

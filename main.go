@@ -34,7 +34,10 @@ func main() {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
+		r.Use(rl.AuthMiddleware())
 		r.Get("/hello", v1.SayHello)
+
+		r.Post("/users", routes.CreateUser)
 
 		r.Post("/keys", routes.CreateKey)
 		r.Delete("/keys/{id}", routes.DeleteKey)
