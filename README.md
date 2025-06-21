@@ -4,6 +4,17 @@ Bifrost is a lightweight, extensible API proxy written in Go that enables secure
 
 Built with Kubernetes in mind, Bifrost is designed to operate as a standalone proxy or as a Kubernetes Operator, making it easy to provision and manage virtual keys in cloud-native environments.
 
+## Requirements
+
+The project targets **Go 1.23.8**. To set up the required toolchain and run Bifrost locally, execute:
+
+```bash
+make setup
+make run
+```
+
+If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
+
 
 # Core Features
 ## Virtual Key Mapping
