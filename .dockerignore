@@ -1,0 +1,19 @@
+# Ignore git metadata and GitHub configuration
+.git
+.github
+
+# Ignore test suites and local dev scripts
+tests
+*.sh
+
+docker-compose.yml
+Makefile
+
+# Ignore documentation and config files not needed in runtime image
+README.md
+.go-version
+
+# Go build caches and module files are needed for building, so keep go.mod and go.sum
+# but ignore module download caches
+/pkg/mod
+
