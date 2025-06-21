@@ -28,7 +28,12 @@ func main() {
 		r.Post("/keys", routes.CreateKey)
 		r.Delete("/keys/{id}", routes.DeleteKey)
 
+		r.Post("/services", routes.CreateService)
+		r.Delete("/services/{id}", routes.DeleteService)
+
 		r.With(m.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+
+		r.Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
 	})
 
 	http.ListenAndServe(config.ServerPort(), r)
