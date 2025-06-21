@@ -24,9 +24,9 @@ Stop it again with:
 make compose-down
 ```
 
-Use `./test-rate-limitting-compose.sh` to run the rate limit script against this environment.
+Use `./test-rate-limiting-compose.sh` to run the rate limit script against this environment.
 If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
-Then run `./test-rate-limitting.sh` to send a burst of requests against the `/v1/rate` endpoint.
+Then run `./test-rate-limiting.sh` to send a burst of requests against the `/v1/rate` endpoint.
 
 ## Running with Docker Compose
 
@@ -50,7 +50,7 @@ With the services running you can execute the Go tests against the live stack:
 go test ./...
 ```
 
-See `test-rate-limitting.sh` for a small script that exercises the rate limit
+See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
 ## Running Tests

@@ -8,7 +8,7 @@ docker compose up -d
 sleep 5
 
 # Run the existing rate limit test against the running stack
-./test-rate-limitting.sh
+./test-rate-limiting.sh
 
 # Tear down the stack after the test
 docker compose down
