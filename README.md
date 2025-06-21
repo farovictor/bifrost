@@ -13,7 +13,19 @@ make setup
 make run
 ```
 
-If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
+If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`) or start the provided Docker Compose stack:
+
+```bash
+make compose-up
+```
+
+Stop it again with:
+
+```bash
+make compose-down
+```
+
+Use `./test-rate-limitting-compose.sh` to run the rate limit script against this environment.
 
 ## Running Tests
 Run the suite with:
