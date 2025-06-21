@@ -80,6 +80,28 @@ You can export these variables or prefix them when starting the server.
 BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
 ```
 
+### Virtual Key Format
+
+Virtual keys are represented by a small JSON object with the following fields:
+
+- `id` – unique identifier of the virtual key.
+- `scope` – allowed operations for the key (`read` or `write`).
+- `target` – service identifier that the key grants access to.
+- `expires_at` – RFC3339 timestamp when the key expires.
+- `rate_limit` – maximum requests per minute permitted.
+
+Example:
+
+```json
+{
+  "id": "mykey",
+  "scope": "read",
+  "target": "svc",
+  "expires_at": "2024-01-02T15:04:05Z",
+  "rate_limit": 60
+}
+```
+
 # Core Features
 ## Virtual Key Mapping
 Define ephemeral, revocable keys mapped to long-lived secrets or tokens.
