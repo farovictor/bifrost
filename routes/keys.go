@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -18,6 +19,14 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 	var k keys.VirtualKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if !keys.ValidateScope(k.Scope) {
+		http.Error(w, "invalid scope", http.StatusBadRequest)
+		return
+	}
+	if !k.ExpiresAt.After(time.Now()) {
+		http.Error(w, "expires_at must be in the future", http.StatusBadRequest)
 		return
 	}
 	if _, err := ServiceStore.Get(k.Target); err != nil {
