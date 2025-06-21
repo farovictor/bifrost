@@ -15,6 +15,12 @@ make run
 
 If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
 
+## Running Tests
+Run the suite with:
+```bash
+go test ./...
+```
+
 ### Configuration via Environment Variables
 
 Bifrost can be configured through a handful of environment variables:
@@ -32,7 +38,6 @@ You can export these variables or prefix them when starting the server.
 ```bash
 BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
 ```
-
 
 # Core Features
 ## Virtual Key Mapping

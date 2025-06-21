@@ -1,0 +1,73 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+
+	routes "github.com/FokusInternal/bifrost/routes"
+	v1 "github.com/FokusInternal/bifrost/routes/v1"
+)
+
+func setupRouter() http.Handler {
+	r := chi.NewRouter()
+	r.Get("/healthz", routes.Healthz)
+	r.Get("/version", routes.Version)
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/hello", v1.SayHello)
+	})
+	return r
+}
+
+func TestHealthz(t *testing.T) {
+	router := setupRouter()
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	if body := rr.Body.String(); body != "ok" {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}
+
+func TestVersion(t *testing.T) {
+	router := setupRouter()
+	req := httptest.NewRequest(http.MethodGet, "/version", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp["version"] == "" {
+		t.Fatalf("version field is empty")
+	}
+}
+
+func TestV1Hello(t *testing.T) {
+	router := setupRouter()
+	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	if body := rr.Body.String(); body != "hello world" {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}
