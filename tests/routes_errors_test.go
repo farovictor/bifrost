@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/services"
 	routes "github.com/FokusInternal/bifrost/routes"
 )
 
@@ -66,5 +67,29 @@ func TestDeleteKeyNotFound(t *testing.T) {
 
 	if body := strings.TrimSpace(rr.Body.String()); body != "not found" {
 		t.Fatalf("unexpected body: %s", body)
+	}
+}
+
+func TestCreateKeyMissingService(t *testing.T) {
+	routes.KeyStore = keys.NewStore()
+	routes.ServiceStore = services.NewStore()
+	router := setupRouter()
+
+	k := keys.VirtualKey{ID: "nosvc", Scope: "test", Target: "missing", ExpiresAt: time.Now()}
+	body, _ := json.Marshal(k)
+	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", rr.Code)
+	}
+
+	if body := strings.TrimSpace(rr.Body.String()); body != "service not found" {
+		t.Fatalf("unexpected body: %s", body)
+	}
+
+	if _, err := routes.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
+		t.Fatalf("key should not have been created")
 	}
 }
