@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"time"
 
+	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
@@ -79,10 +81,16 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	token, err := buildAuthToken(u.ID, orgID)
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	resp := struct {
 		users.User
 		Token string `json:"token"`
-	}{User: u, Token: generateKey()}
+	}{User: u, Token: token}
 
 	logging.Logger.Info().Str("user_id", u.ID).Msg("created user")
 	w.Header().Set("Content-Type", "application/json")
@@ -96,4 +104,13 @@ func generateKey() string {
 		return ""
 	}
 	return hex.EncodeToString(b)
+}
+
+func buildAuthToken(userID, orgID string) (string, error) {
+	t := auth.AuthToken{
+		UserID:    userID,
+		OrgID:     orgID,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+	return auth.Sign(t)
 }
