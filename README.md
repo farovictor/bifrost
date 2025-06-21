@@ -15,6 +15,31 @@ make run
 
 If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
 
+## Running with Docker Compose
+
+The repository provides a `docker-compose.yml` that starts Bifrost together with
+Redis. Make sure both **Docker** and **Docker Compose** are installed, then run:
+
+```bash
+docker-compose up -d
+```
+
+This brings up the stack in the background on the default ports. When finished,
+tear it down with:
+
+```bash
+docker-compose down
+```
+
+With the services running you can execute the Go tests against the live stack:
+
+```bash
+go test ./...
+```
+
+See `test-rate-limitting.sh` for a small script that exercises the rate limit
+middleware against the Compose setup.
+
 ## Running Tests
 Run the suite with:
 ```bash
