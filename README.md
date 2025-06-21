@@ -53,6 +53,16 @@ go test ./...
 See `test-rate-limitting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
+## Example Request
+
+Once the server is running you can proxy a request with a virtual key:
+
+```bash
+curl -H "X-Virtual-Key: <key>" http://localhost:3333/v1/proxy/hello
+```
+
+You can also supply the key via the `key` query parameter instead of the header.
+
 ## Running Tests
 Run the suite with:
 ```bash
