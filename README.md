@@ -65,6 +65,12 @@ go run ./cmd/bifrost issue --id mykey --target svc --scope read --ttl 10m
 
 # revoke an existing key
 go run ./cmd/bifrost revoke mykey
+
+# register a service
+go run ./cmd/bifrost service-add --id svc --endpoint http://localhost:8081 --apikey SECRET
+
+# delete a service
+go run ./cmd/bifrost service-delete svc
 ```
 
 Use `--addr` to specify a custom API address if the server is not running on
@@ -104,6 +110,25 @@ returns status `204 No Content`.
 ```bash
 curl -X DELETE http://localhost:3333/v1/keys/mykey
 ```
+
+### Add a service
+POST `/v1/services` with JSON describing the service. Returns `201 Created`.
+
+Example:
+
+```bash
+curl -X POST http://localhost:3333/v1/services \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"svc","endpoint":"http://localhost:8081","api_key":"SECRET"}'
+```
+
+### Delete a service
+DELETE `/v1/services/<id>` to remove a service.
+
+### Proxy using a virtual key
+Send any request to `/v1/proxy/<path>` with header `X-Virtual-Key` set to a
+previously issued key. Bifrost injects the real API key and forwards the request
+to the mapped service.
 
 
 # Planned Extensions
