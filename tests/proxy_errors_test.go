@@ -56,7 +56,7 @@ func TestProxyExpiredKey(t *testing.T) {
 	routes.KeyStore = keys.NewStore()
 	routes.RootKeyStore = rootkeys.NewStore()
 
-	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour)}
+	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestProxyScopeViolation(t *testing.T) {
 	if err := routes.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
-	k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour)}
+	k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}

@@ -14,10 +14,11 @@ import (
 )
 
 var (
-	issueID     string
-	issueScope  string
-	issueTarget string
-	issueTTL    time.Duration
+	issueID        string
+	issueScope     string
+	issueTarget    string
+	issueTTL       time.Duration
+	issueRateLimit int
 )
 
 var issueCmd = &cobra.Command{
@@ -29,6 +30,7 @@ var issueCmd = &cobra.Command{
 			Scope:     issueScope,
 			Target:    issueTarget,
 			ExpiresAt: time.Now().Add(issueTTL),
+			RateLimit: issueRateLimit,
 		}
 		body, err := json.Marshal(k)
 		if err != nil {
@@ -53,6 +55,7 @@ func init() {
 	issueCmd.Flags().StringVar(&issueScope, "scope", "", "scope for the key")
 	issueCmd.Flags().StringVar(&issueTarget, "target", "", "target service")
 	issueCmd.Flags().DurationVar(&issueTTL, "ttl", time.Hour, "time to live")
+	issueCmd.Flags().IntVar(&issueRateLimit, "rate-limit", 0, "requests per minute allowed")
 	issueCmd.MarkFlagRequired("id")
 	issueCmd.MarkFlagRequired("scope")
 	issueCmd.MarkFlagRequired("target")

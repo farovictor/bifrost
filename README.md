@@ -63,6 +63,7 @@ keys you must register a root key (or update it later) and then associate servic
 
 The `--target` flag on `issue` refers to the service ID provided when calling
 `service-add`.
+Use `--rate-limit` to specify the maximum requests per minute allowed for the issued key.
 
 ```bash
 # register a root key
@@ -75,7 +76,7 @@ go run ./cmd/bifrost rootkey-update --id root --apikey NEWSECRET
 go run ./cmd/bifrost service-add --id svc --endpoint http://localhost:8081 --rootkey root
 
 # issue a new key for that service
-go run ./cmd/bifrost issue --id mykey --target svc --scope read --ttl 10m
+go run ./cmd/bifrost issue --id mykey --target svc --scope read --ttl 10m --rate-limit 60
 
 # revoke an existing key
 go run ./cmd/bifrost revoke mykey
@@ -121,7 +122,7 @@ Example request:
 ```bash
 curl -X POST http://localhost:3333/v1/keys \
   -H 'Content-Type: application/json' \
-  -d '{"id":"mykey","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z"}'
+  -d '{"id":"mykey","scope":"read","target":"svc","expires_at":"2024-01-02T15:04:05Z","rate_limit":60}'
 ```
 
 Expected JSON format:
@@ -131,7 +132,8 @@ Expected JSON format:
   "id": "mykey",
   "scope": "read",
   "target": "svc",
-  "expires_at": "2024-01-02T15:04:05Z"
+  "expires_at": "2024-01-02T15:04:05Z",
+  "rate_limit": 60
 }
 ```
 
