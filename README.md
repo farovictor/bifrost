@@ -55,6 +55,21 @@ Log, trace, and monitor access by key, user, origin, or service.
 ## Golang First
 Fast, type-safe, and built for performance and extensibility.
 
+## CLI Usage
+You can manage virtual keys from the command line with the `bifrost` tool.
+The commands interact with the running HTTP API by default.
+
+```bash
+# issue a new key
+go run ./cmd/bifrost issue --id mykey --target svc --scope read --ttl 10m
+
+# revoke an existing key
+go run ./cmd/bifrost revoke mykey
+```
+
+Use `--addr` to specify a custom API address if the server is not running on
+`http://localhost:3333`.
+
 
 # Planned Extensions
 - Integration with Open Policy Agent (OPA) for dynamic authorization.
