@@ -54,6 +54,7 @@ func init() {
 	issueCmd.Flags().StringVar(&issueTarget, "target", "", "target service")
 	issueCmd.Flags().DurationVar(&issueTTL, "ttl", time.Hour, "time to live")
 	issueCmd.MarkFlagRequired("id")
+	issueCmd.MarkFlagRequired("scope")
 	issueCmd.MarkFlagRequired("target")
 	rootCmd.AddCommand(issueCmd)
 }
