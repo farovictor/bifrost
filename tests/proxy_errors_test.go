@@ -26,6 +26,7 @@ func TestProxyMissingKey(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -49,6 +50,7 @@ func TestProxyInvalidKey(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", "bad")
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -77,6 +79,7 @@ func TestProxyExpiredKey(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -120,6 +123,7 @@ func TestProxyScopeViolation(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

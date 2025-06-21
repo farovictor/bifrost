@@ -29,6 +29,7 @@ func TestCreateService(t *testing.T) {
 	body, _ := json.Marshal(svc)
 	req := httptest.NewRequest(http.MethodPost, "/v1/services", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
@@ -62,6 +63,7 @@ func TestDeleteService(t *testing.T) {
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodDelete, "/v1/services/"+svc.ID, nil)
 	req.Header.Set("X-API-Key", u.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

@@ -27,6 +27,7 @@ func TestCreateUserReturnsToken(t *testing.T) {
 	payload := `{"id":"new"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))
 	req.Header.Set("X-API-Key", admin.APIKey)
+	req.Header.Set("Authorization", "Bearer "+makeToken(admin.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
