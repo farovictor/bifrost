@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/FokusInternal/bifrost/config"
 	m "github.com/FokusInternal/bifrost/middlewares"
 	routes "github.com/FokusInternal/bifrost/routes"
 	v1 "github.com/FokusInternal/bifrost/routes/v1"
@@ -27,7 +28,7 @@ func main() {
 		r.With(m.RateLimitMiddleware()).Post("/rate", v1.SayHello)
 	})
 
-	http.ListenAndServe(":3333", r)
+	http.ListenAndServe(config.ServerPort(), r)
 }
 
 func apiVersionCtx(version string) func(next http.Handler) http.Handler {

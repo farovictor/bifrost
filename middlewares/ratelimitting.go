@@ -5,17 +5,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/FokusInternal/bifrost/config"
 	redis "github.com/redis/go-redis/v9"
 )
 
-// TODO: This connection string should come from an env var. Replace all hardcoded values.
-
-// Redis connector to manage rate limitting
+// Redis connector to manage rate limiting using configuration values.
 var rdb = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
-	Password: "",
-	DB:       0,
-	Protocol: 3,
+	Addr:     config.RedisAddr(),
+	Password: config.RedisPassword(),
+	DB:       config.RedisDB(),
+	Protocol: config.RedisProtocol(),
 })
 
 func RateLimitMiddleware() func(http.Handler) http.Handler {
