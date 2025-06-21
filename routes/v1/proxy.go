@@ -46,6 +46,19 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	switch k.Scope {
+	case keys.ScopeRead:
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.Error(w, "insufficient scope", http.StatusForbidden)
+			return
+		}
+	case keys.ScopeWrite:
+		// write scope allows all methods
+	default:
+		http.Error(w, "insufficient scope", http.StatusForbidden)
+		return
+	}
+
 	svc, err := routes.ServiceStore.Get(k.Target)
 	if err != nil {
 		if err == services.ErrServiceNotFound {
