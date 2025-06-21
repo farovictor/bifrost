@@ -21,6 +21,24 @@ Run the suite with:
 go test ./...
 ```
 
+### Configuration via Environment Variables
+
+Bifrost can be configured through a handful of environment variables:
+
+- `BIFROST_PORT` – HTTP port to bind to (defaults to `3333`).
+- `REDIS_ADDR` – address of the Redis instance (defaults to `localhost:6379`).
+- `REDIS_PASSWORD` – password for Redis, if required.
+- `REDIS_DB` – numeric Redis DB index to use (defaults to `0`).
+- `REDIS_PROTOCOL` – Redis protocol version (defaults to `3`).
+
+You can export these variables or prefix them when starting the server.
+
+#### Example
+
+```bash
+BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
+```
+
 # Core Features
 ## Virtual Key Mapping
 Define ephemeral, revocable keys mapped to long-lived secrets or tokens.
