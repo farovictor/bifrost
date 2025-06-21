@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/FokusInternal/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/spf13/cobra"
 )
 

@@ -1,4 +1,4 @@
-module github.com/FokusInternal/bifrost
+module github.com/farovictor/bifrost
 
 go 1.23.8
 

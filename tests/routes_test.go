@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	routes "github.com/FokusInternal/bifrost/routes"
-	v1 "github.com/FokusInternal/bifrost/routes/v1"
+	routes "github.com/farovictor/bifrost/routes"
+	v1 "github.com/farovictor/bifrost/routes/v1"
 )
 
 func setupRouter() http.Handler {

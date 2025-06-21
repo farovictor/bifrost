@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FokusInternal/bifrost/config"
-	routes "github.com/FokusInternal/bifrost/routes"
+	"github.com/farovictor/bifrost/config"
+	routes "github.com/farovictor/bifrost/routes"
 	redis "github.com/redis/go-redis/v9"
 )
 
