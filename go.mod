@@ -1,6 +1,6 @@
 module github.com/FokusInternal/bifrost
 
-go 1.22.1
+go 1.23.8
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
