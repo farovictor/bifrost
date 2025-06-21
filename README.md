@@ -13,7 +13,6 @@ make setup
 make run
 ```
 
-
 ## Running with Docker Compose
 
 The repository provides a `docker-compose.yml` that starts Bifrost together with
@@ -36,7 +35,7 @@ With the services running you can execute the Go tests against the live stack:
 go test ./...
 ```
 
-See `test-rate-limitting.sh` for a small script that exercises the rate limit
+See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
 ## Example Request
