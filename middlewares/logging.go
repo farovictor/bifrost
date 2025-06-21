@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/FokusInternal/bifrost/pkg/logging"
+	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/go-chi/chi/v5/middleware"
 )
 

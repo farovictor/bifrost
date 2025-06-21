@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/FokusInternal/bifrost/pkg/version"
+	"github.com/farovictor/bifrost/pkg/version"
 )
 
 // Version responds with the application's version.

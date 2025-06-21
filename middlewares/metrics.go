@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FokusInternal/bifrost/config"
-	"github.com/FokusInternal/bifrost/pkg/metrics"
+	"github.com/farovictor/bifrost/config"
+	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/go-chi/chi/v5/middleware"
 )
 

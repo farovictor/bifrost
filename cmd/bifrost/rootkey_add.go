@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/FokusInternal/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/spf13/cobra"
 )
 

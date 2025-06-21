@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FokusInternal/bifrost/config"
-	"github.com/FokusInternal/bifrost/pkg/keys"
-	"github.com/FokusInternal/bifrost/pkg/metrics"
-	"github.com/FokusInternal/bifrost/pkg/rootkeys"
-	"github.com/FokusInternal/bifrost/pkg/services"
-	routes "github.com/FokusInternal/bifrost/routes"
+	"github.com/farovictor/bifrost/config"
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/metrics"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
+	routes "github.com/farovictor/bifrost/routes"
 )
 
 // Proxy forwards the request to the target service determined by the provided

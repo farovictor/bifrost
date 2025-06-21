@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/spf13/cobra"
 )
 

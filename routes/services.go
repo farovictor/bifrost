@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/FokusInternal/bifrost/pkg/logging"
-	"github.com/FokusInternal/bifrost/pkg/rootkeys"
-	"github.com/FokusInternal/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/logging"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
 )
 
 // ServiceStore holds defined services in memory.

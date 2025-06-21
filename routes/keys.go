@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/FokusInternal/bifrost/pkg/keys"
-	"github.com/FokusInternal/bifrost/pkg/logging"
-	"github.com/FokusInternal/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/logging"
+	"github.com/farovictor/bifrost/pkg/services"
 )
 
 // KeyStore holds the active VirtualKeys in memory.

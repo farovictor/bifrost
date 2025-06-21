@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	rl "github.com/FokusInternal/bifrost/middlewares"
+	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/go-chi/chi/v5"
 
-	"github.com/FokusInternal/bifrost/pkg/keys"
-	"github.com/FokusInternal/bifrost/pkg/rootkeys"
-	"github.com/FokusInternal/bifrost/pkg/services"
-	routes "github.com/FokusInternal/bifrost/routes"
-	v1 "github.com/FokusInternal/bifrost/routes/v1"
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
+	routes "github.com/farovictor/bifrost/routes"
+	v1 "github.com/farovictor/bifrost/routes/v1"
 )
 
 func setupRouterRL() http.Handler {

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FokusInternal/bifrost/pkg/keys"
-	"github.com/FokusInternal/bifrost/pkg/rootkeys"
-	"github.com/FokusInternal/bifrost/pkg/services"
-	routes "github.com/FokusInternal/bifrost/routes"
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
+	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateKey(t *testing.T) {
