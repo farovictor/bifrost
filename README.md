@@ -131,7 +131,13 @@ keys you must register a root key (or update it later) and then associate servic
 
 All management endpoints now require authentication. Create an API user first
 using `bifrost user-add` (or the `/v1/users` HTTP route) to obtain an API key
-for subsequent requests.
+**and an authentication token** for subsequent requests.
+
+`user-add` accepts `--org-id` to join an existing organization or `--org-name`
+to create a new one on the fly. Use `--role` to specify the membership role
+(`owner`, `admin`, or `member`). When `--org-name` is supplied without
+`--org-id`, the organization is created and the user is added with the chosen
+role.
 
 The `--target` flag on `issue` refers to the service ID provided when calling
 `service-add`.
@@ -159,19 +165,22 @@ go run ./cmd/bifrost service-delete svc
 # delete the root key
 go run ./cmd/bifrost rootkey-delete root
 
-# create an API user
-go run ./cmd/bifrost user-add --id admin
+# create an API user and organization
+go run ./cmd/bifrost user-add --id admin --org-name demo-org --role owner
 ```
 
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
 
 The generated API key must be provided in the `X-API-Key` or `Authorization`
-header when calling any `/v1` endpoint.
+header when calling any `/v1` endpoint. Along with the key, include the
+**auth token** returned by `user-add` in the `Authorization` header as a Bearer
+token. The token expires after 24 hours and is used to resolve organization
+context for each request.
 
 ### End-to-End Example
-Below is a minimal workflow showing how to register a service, issue a key and
-then proxy a request using that key.
+Below is a minimal workflow showing how to register a service, create a user and
+then proxy a request using the issued key.
 
 ```bash
 # add a root key
@@ -180,8 +189,15 @@ go run ./cmd/bifrost rootkey-add --id demo-root --apikey SECRET
 # add the upstream service
 go run ./cmd/bifrost service-add --id demo --endpoint http://localhost:8081 --rootkey demo-root
 
-# create a virtual key that targets that service
-go run ./cmd/bifrost issue --id demo-key --target demo --ttl 5m
+# create a user and organization (prints API key and auth token)
+go run ./cmd/bifrost user-add --id admin --org-name demo-org --role owner
+
+# issue a virtual key using the auth token
+curl -X POST http://localhost:3333/v1/keys \
+  -H "X-API-Key: <api_key>" \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"demo-key","target":"demo","ttl":"5m"}'
 
 # make a proxied request
 curl -H "X-Virtual-Key: demo-key" http://localhost:3333/v1/proxy/hello
@@ -244,8 +260,10 @@ curl -X POST http://localhost:3333/v1/services \
 DELETE `/v1/services/<id>` to remove a service. Include your API key header.
 
 ### Create a user
-POST `/v1/users` with a JSON body containing the user ID. The response returns
-the generated API key.
+POST `/v1/users` with a JSON body containing the user ID. Optional `org_id` and
+`org_name` fields associate the user with an organization. Provide a `role`
+(`owner`, `admin`, or `member`) when joining or creating an organization. The
+response returns the API key **and** an authentication token valid for 24 hours.
 
 Example:
 
@@ -253,7 +271,8 @@ Example:
 curl -X POST http://localhost:3333/v1/users \
   -H 'Content-Type: application/json' \
   -H 'X-API-Key: <api_key>' \
-  -d '{"id":"admin"}'
+  -H 'Authorization: Bearer <token>' \
+  -d '{"id":"admin","org_name":"demo-org","role":"owner"}'
 ```
 
 ### Metrics endpoint
@@ -278,6 +297,10 @@ place.
 - **Owner** – full control over the organization and its members.
 - **Admin** – manage resources but cannot remove or demote owners.
 - **Member** – limited to resources explicitly granted.
+
+The auth token contains the `org_id` used to look up the user's membership.
+If a membership exists, the corresponding role is attached to the request
+context so handlers can enforce organization-specific policies.
 
 
 # Planned Extensions
