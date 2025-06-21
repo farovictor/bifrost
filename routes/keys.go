@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/FokusInternal/bifrost/pkg/keys"
+	"github.com/FokusInternal/bifrost/pkg/logging"
 	"github.com/FokusInternal/bifrost/pkg/services"
 )
 
@@ -50,6 +51,7 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("key_id", k.ID).Msg("created key")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(k)
@@ -67,5 +69,6 @@ func DeleteKey(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("key_id", id).Msg("deleted key")
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/FokusInternal/bifrost/pkg/logging"
 	"github.com/FokusInternal/bifrost/pkg/rootkeys"
 	"github.com/FokusInternal/bifrost/pkg/services"
 )
@@ -37,6 +38,7 @@ func CreateService(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("service_id", s.ID).Msg("created service")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(s)
@@ -54,5 +56,6 @@ func DeleteService(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	logging.Logger.Info().Str("service_id", id).Msg("deleted service")
 	w.WriteHeader(http.StatusNoContent)
 }
