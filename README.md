@@ -15,6 +15,11 @@ make run
 
 If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
 
+## Running Tests
+Run the suite with:
+```bash
+go test ./...
+```
 
 # Core Features
 ## Virtual Key Mapping
