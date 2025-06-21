@@ -57,17 +57,22 @@ Fast, type-safe, and built for performance and extensibility.
 
 ## CLI Usage
 You can manage virtual keys from the command line with the `bifrost` tool.
-The commands interact with the running HTTP API by default.
+The commands interact with the running HTTP API by default. Before issuing
+keys you must register the upstream service along with its API key using
+`service-add`.
+
+The `--target` flag on `issue` refers to the service ID provided when calling
+`service-add`.
 
 ```bash
-# issue a new key
+# register a service
+go run ./cmd/bifrost service-add --id svc --endpoint http://localhost:8081 --apikey SECRET
+
+# issue a new key for that service
 go run ./cmd/bifrost issue --id mykey --target svc --scope read --ttl 10m
 
 # revoke an existing key
 go run ./cmd/bifrost revoke mykey
-
-# register a service
-go run ./cmd/bifrost service-add --id svc --endpoint http://localhost:8081 --apikey SECRET
 
 # delete a service
 go run ./cmd/bifrost service-delete svc
@@ -75,6 +80,21 @@ go run ./cmd/bifrost service-delete svc
 
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
+
+### End-to-End Example
+Below is a minimal workflow showing how to register a service, issue a key and
+then proxy a request using that key.
+
+```bash
+# add the upstream service
+go run ./cmd/bifrost service-add --id demo --endpoint http://localhost:8081 --apikey SECRET
+
+# create a virtual key that targets that service
+go run ./cmd/bifrost issue --id demo-key --target demo --ttl 5m
+
+# make a proxied request
+curl -H "X-Virtual-Key: demo-key" http://localhost:3333/v1/proxy/hello
+```
 
 ## HTTP API
 The CLI commands above are thin wrappers around a simple HTTP interface. The
