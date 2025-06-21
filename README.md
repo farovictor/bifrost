@@ -14,6 +14,7 @@ make run
 ```
 
 If you want to exercise the rate‑limit middleware, ensure Redis is running (for example via `docker run -d --name redis-dev -p 6379:6379 redis:7-alpine`).
+Then run `./test-rate-limitting.sh` to send a burst of requests against the `/v1/rate` endpoint.
 
 ## Running Tests
 Run the suite with:
