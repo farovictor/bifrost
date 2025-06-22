@@ -7,8 +7,8 @@ services:
       - "3333:3333"
     environment:
       BIFROST_PORT: "3333"
-      REDIS_ADDR: "redis:6379"
-      POSTGRES_DSN: "postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable"
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
     depends_on:
       redis:
         condition: service_started
