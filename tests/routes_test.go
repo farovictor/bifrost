@@ -71,7 +71,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestV1Hello(t *testing.T) {
-	routes.UserStore = users.NewStore()
+	routes.UserStore = users.NewMemoryStore()
 	u := users.User{ID: "u", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()

@@ -11,7 +11,7 @@ import (
 )
 
 // RootKeyStore holds active root keys in memory.
-var RootKeyStore = rootkeys.NewStore()
+var RootKeyStore = rootkeys.NewMemoryStore()
 
 // CreateRootKey handles POST /rootkeys to store a new root key.
 func CreateRootKey(w http.ResponseWriter, r *http.Request) {

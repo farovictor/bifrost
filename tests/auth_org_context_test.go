@@ -54,8 +54,8 @@ func TestUserCreationOrgContext(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			routes.UserStore = users.NewStore()
-			routes.OrgStore = orgs.NewStore()
+			routes.UserStore = users.NewMemoryStore()
+			routes.OrgStore = orgs.NewMemoryStore()
 			routes.MembershipStore = orgs.NewMembershipStore()
 
 			admin := users.User{ID: "admin", APIKey: "admink"}
@@ -173,8 +173,8 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			routes.UserStore = users.NewStore()
-			routes.OrgStore = orgs.NewStore()
+			routes.UserStore = users.NewMemoryStore()
+			routes.OrgStore = orgs.NewMemoryStore()
 			routes.MembershipStore = orgs.NewMembershipStore()
 			routes.UserStore.Create(u)
 			routes.OrgStore.Create(o)
