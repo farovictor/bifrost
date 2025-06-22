@@ -10,9 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var initAdminID string
-var initAdminOrgID string
-var initAdminOrgName string
+var (
+	initAdminName    string
+	initAdminEmail   string
+	initAdminOrgName string
+)
 
 var initAdminCmd = &cobra.Command{
 	Use:   "init-admin",
@@ -30,7 +32,7 @@ var initAdminCmd = &cobra.Command{
 		defer sqlDB.Close()
 
 		orgStore := orgs.NewPostgresStore(db)
-		o := orgs.Organization{ID: initAdminOrgID, Name: initAdminOrgName}
+		o := orgs.Organization{Name: initAdminOrgName}
 		if err := orgStore.Create(o); err != nil && err != orgs.ErrOrgExists {
 			return err
 		}
@@ -40,7 +42,11 @@ var initAdminCmd = &cobra.Command{
 		if key == "" {
 			key = users.GenerateAPIKey()
 		}
-		u := users.User{ID: initAdminID, APIKey: key}
+		u := users.User{
+			Name:   initAdminName,
+			Email:  initAdminEmail,
+			APIKey: key,
+		}
 		if err := store.Create(u); err != nil {
 			if err == users.ErrUserExists {
 				return fmt.Errorf("user already exists")
@@ -53,8 +59,8 @@ var initAdminCmd = &cobra.Command{
 }
 
 func init() {
-	initAdminCmd.Flags().StringVar(&initAdminID, "id", config.AdminID(), "admin user id")
-	initAdminCmd.Flags().StringVar(&initAdminOrgID, "org-id", config.AdminOrgID(), "admin organization id")
+	initAdminCmd.Flags().StringVar(&initAdminName, "name", config.AdminName(), "admin user name")
+	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", config.AdminEmail(), "admin user email")
 	initAdminCmd.Flags().StringVar(&initAdminOrgName, "org-name", config.AdminOrgName(), "admin organization name")
 	rootCmd.AddCommand(initAdminCmd)
 }

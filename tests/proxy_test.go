@@ -31,7 +31,7 @@ func TestProxy(t *testing.T) {
 			routes.KeyStore = keys.NewMemoryStore()
 			routes.RootKeyStore = rootkeys.NewMemoryStore()
 			routes.UserStore = users.NewMemoryStore()
-			u := users.User{ID: "u", APIKey: "secret"}
+			u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 			routes.UserStore.Create(u)
 
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			routes.KeyStore = keys.NewMemoryStore()
 			routes.RootKeyStore = rootkeys.NewMemoryStore()
 			routes.UserStore = users.NewMemoryStore()
-			u := users.User{ID: "u", APIKey: "secret"}
+			u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 			routes.UserStore.Create(u)
 
 			called := false

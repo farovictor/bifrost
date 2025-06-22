@@ -77,9 +77,9 @@ Bifrost can be configured through the following environment variables:
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
-| `BIFROST_ADMIN_ID` | ID for the initial admin user | `admin` |
 | `BIFROST_ADMIN_API_KEY` | API key for the admin user | random |
-| `BIFROST_ADMIN_ORG_ID` | ID for the admin organization | `admin-org` |
+| `BIFROST_ADMIN_NAME` | name for the admin user | `Admin` |
+| `BIFROST_ADMIN_EMAIL` | email for the admin user | `admin@example.com` |
 | `BIFROST_ADMIN_ORG_NAME` | name of the admin organization | `Admin` |
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.

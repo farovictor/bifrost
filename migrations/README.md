@@ -12,7 +12,7 @@ psql $DATABASE_URL -f migrations/002_create_org_memberships.sql
 Any migration tool that executes SQL scripts in order (like `migrate` or `goose`) will also work.
 
 After the schema is in place run `bifrost init-admin` to create the initial admin
-user and organization. Set `BIFROST_ADMIN_ID`, `BIFROST_ADMIN_API_KEY`,
-`BIFROST_ADMIN_ORG_ID`, and `BIFROST_ADMIN_ORG_NAME` to override the defaults.
+user. Set `BIFROST_ADMIN_API_KEY`, `BIFROST_ADMIN_NAME`, and `BIFROST_ADMIN_EMAIL`
+to override the defaults.
 The command prints the resulting API key so you can store it securely.
 
