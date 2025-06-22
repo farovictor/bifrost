@@ -22,6 +22,18 @@ func TestCreateGetOrg(t *testing.T) {
 	}
 }
 
+func TestCreateOrgDuplicateName(t *testing.T) {
+	routes.OrgStore = orgs.NewMemoryStore()
+	o1 := orgs.Organization{ID: "org1", Name: "Dup", Domain: "example.com", Email: "dup1@example.com"}
+	if err := routes.OrgStore.Create(o1); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+	o2 := orgs.Organization{ID: "org2", Name: "Dup", Domain: "example.org", Email: "dup2@example.com"}
+	if err := routes.OrgStore.Create(o2); err != orgs.ErrOrgExists {
+		t.Fatalf("expected ErrOrgExists, got %v", err)
+	}
+}
+
 func TestUpdateOrg(t *testing.T) {
 	routes.OrgStore = orgs.NewMemoryStore()
 	o := orgs.Organization{ID: "org1", Name: "Old", Domain: "example.com", Email: "org@example.com"}
