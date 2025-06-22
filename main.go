@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
+	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/metrics"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
@@ -21,6 +26,17 @@ func main() {
 
 	if config.MetricsEnabled() {
 		metrics.Register(prometheus.DefaultRegisterer)
+	}
+
+	if dsn := config.PostgresDSN(); dsn != "" {
+		db, err := sql.Open("postgres", dsn)
+		if err != nil {
+			logging.Logger.Fatal().Err(err).Msg("connect postgres")
+		}
+		routes.UserStore = users.NewPostgresStore(db)
+		routes.RootKeyStore = rootkeys.NewPostgresStore(db)
+		routes.ServiceStore = services.NewPostgresStore(db)
+		routes.KeyStore = keys.NewPostgresStore(db)
 	}
 
 	r := chi.NewRouter()

@@ -12,8 +12,8 @@ import (
 	"github.com/farovictor/bifrost/pkg/services"
 )
 
-// KeyStore holds the active VirtualKeys in memory.
-var KeyStore = keys.NewStore()
+// KeyStore provides access to virtual key storage.
+var KeyStore keys.Store = keys.NewStore()
 
 // CreateKey handles POST /keys and stores a new VirtualKey.
 func CreateKey(w http.ResponseWriter, r *http.Request) {

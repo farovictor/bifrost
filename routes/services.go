@@ -11,8 +11,8 @@ import (
 	"github.com/farovictor/bifrost/pkg/services"
 )
 
-// ServiceStore holds defined services in memory.
-var ServiceStore = services.NewStore()
+// ServiceStore provides access to service storage.
+var ServiceStore services.Store = services.NewStore()
 
 // CreateService handles POST /services to store a new Service.
 func CreateService(w http.ResponseWriter, r *http.Request) {

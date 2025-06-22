@@ -54,6 +54,12 @@ func RedisProtocol() int {
 	return 3
 }
 
+// PostgresDSN returns the connection string for PostgreSQL if set.
+// It reads the POSTGRES_DSN environment variable.
+func PostgresDSN() string {
+	return os.Getenv("POSTGRES_DSN")
+}
+
 // MetricsEnabled determines whether Prometheus metrics should be exposed.
 // It checks the BIFROST_ENABLE_METRICS environment variable for a truthy value.
 func MetricsEnabled() bool {

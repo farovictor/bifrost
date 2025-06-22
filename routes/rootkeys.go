@@ -10,8 +10,8 @@ import (
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 )
 
-// RootKeyStore holds active root keys in memory.
-var RootKeyStore = rootkeys.NewStore()
+// RootKeyStore provides access to root key storage.
+var RootKeyStore rootkeys.Store = rootkeys.NewStore()
 
 // CreateRootKey handles POST /rootkeys to store a new root key.
 func CreateRootKey(w http.ResponseWriter, r *http.Request) {

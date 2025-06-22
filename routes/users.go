@@ -10,8 +10,8 @@ import (
 	"github.com/farovictor/bifrost/pkg/users"
 )
 
-// UserStore holds registered users in memory.
-var UserStore = users.NewStore()
+// UserStore provides access to user storage.
+var UserStore users.Store = users.NewStore()
 
 // CreateUser handles POST /users and generates an API key.
 func CreateUser(w http.ResponseWriter, r *http.Request) {

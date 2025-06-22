@@ -8,8 +8,10 @@ services:
     environment:
       BIFROST_PORT: "3333"
       REDIS_ADDR: "redis:6379"
+      POSTGRES_DSN: "postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable"
     depends_on:
       - redis
+      - postgres
     networks:
       - internal
 
@@ -22,9 +24,23 @@ services:
     networks:
       - internal
 
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bifrost
+      POSTGRES_PASSWORD: bifrost
+      POSTGRES_DB: bifrost
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
 networks:
   internal:
     driver: bridge
 
 volumes:
   redis-data:
+  pg-data:

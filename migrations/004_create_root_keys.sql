@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS root_keys (
+    id VARCHAR(255) PRIMARY KEY,
+    api_key TEXT NOT NULL
+);

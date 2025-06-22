@@ -16,7 +16,8 @@ make run
 ## Running with Docker Compose
 
 The repository provides a `docker-compose.yml` that starts Bifrost together with
-Redis. Make sure both **Docker** and **Docker Compose** are installed, then run:
+Redis and Postgres. Make sure both **Docker** and **Docker Compose** are installed,
+then run:
 
 ```bash
 docker-compose up -d
@@ -65,6 +66,7 @@ Bifrost can be configured through the following environment variables:
 | `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
 | `REDIS_DB` | numeric Redis DB index to use | `0` |
 | `REDIS_PROTOCOL` | Redis protocol version | `3` |
+| `POSTGRES_DSN` | PostgreSQL connection string | *(empty)* |
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
@@ -76,7 +78,9 @@ You can export these variables or prefix them when starting the server.
 #### Example
 
 ```bash
-BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
+BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 \
+POSTGRES_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable" \
+make run
 ```
 
 ### Virtual Key Format
@@ -161,6 +165,13 @@ go run ./cmd/bifrost rootkey-delete root
 
 # create an API user
 go run ./cmd/bifrost user-add --id admin
+```
+
+To initialize the database tables, run the `migrate` command which executes all
+SQL files in the `migrations` directory against the `POSTGRES_DSN` connection:
+
+```bash
+go run ./cmd/bifrost migrate
 ```
 
 Use `--addr` to specify a custom API address if the server is not running on
