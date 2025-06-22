@@ -1,35 +1,45 @@
 package auth
 
 import (
-	"crypto/rand"
-	"errors"
+	"bytes"
 	"os"
+	"strings"
 	"testing"
+
+	"github.com/farovictor/bifrost/pkg/logging"
+	"github.com/rs/zerolog"
 )
 
-type failReader struct{}
+func TestLoadKeyWarnInvalid(t *testing.T) {
+	old := os.Getenv("BIFROST_SIGNING_KEY")
+	t.Cleanup(func() {
+		os.Setenv("BIFROST_SIGNING_KEY", old)
+	})
+	os.Setenv("BIFROST_SIGNING_KEY", "invalid")
 
-func (failReader) Read(b []byte) (int, error) {
-	return 0, errors.New("fail")
-}
+	var buf bytes.Buffer
+	logging.Logger = zerolog.New(&buf)
 
-func TestGenerateKeyFailure(t *testing.T) {
-	orig := rand.Reader
-	rand.Reader = failReader{}
-	defer func() { rand.Reader = orig }()
+	loadKey()
 
-	if _, err := generateKey(); err == nil {
-		t.Fatalf("expected error")
+	if !strings.Contains(buf.String(), "invalid BIFROST_SIGNING_KEY") {
+		t.Fatalf("warning not logged: %s", buf.String())
 	}
 }
 
-func TestLoadKeyFailure(t *testing.T) {
-	orig := rand.Reader
-	rand.Reader = failReader{}
-	defer func() { rand.Reader = orig }()
+func TestLoadKeyWarnEmpty(t *testing.T) {
+	old := os.Getenv("BIFROST_SIGNING_KEY")
+	t.Cleanup(func() {
+		os.Setenv("BIFROST_SIGNING_KEY", old)
+	})
 	os.Unsetenv("BIFROST_SIGNING_KEY")
 
-	if _, err := loadKey(); err == nil {
-		t.Fatalf("expected error")
+	var buf bytes.Buffer
+	logging.Logger = zerolog.New(&buf)
+
+	loadKey()
+
+	if !strings.Contains(buf.String(), "BIFROST_SIGNING_KEY not set") {
+		t.Fatalf("warning not logged: %s", buf.String())
 	}
 }
