@@ -4,7 +4,7 @@ package users
 type User struct {
 	ID     string `json:"id" gorm:"primaryKey;size:255;default:uuid_generate_v4()"`
 	Name   string `json:"name" gorm:"not null"`
-	Email  string `json:"email" gorm:"not null"`
+	Email  string `json:"email" gorm:"not null;unique"`
 	APIKey string `json:"api_key" gorm:"not null"`
 }
 
