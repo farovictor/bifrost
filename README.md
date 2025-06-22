@@ -320,6 +320,15 @@ curl -X POST http://localhost:3333/v1/users \
   -d '{"id":"admin","org_name":"demo-org","role":"owner"}'
 ```
 
+### Get user info
+GET `/v1/user` returns the authenticated user's details and organizations.
+
+```bash
+curl http://localhost:3333/v1/user \
+  -H 'X-API-Key: <api_key>' \
+  -H 'Authorization: Bearer <token>'
+```
+
 ### Metrics endpoint
 When metrics are enabled, GET `/metrics` returns Prometheus-formatted metrics.
 

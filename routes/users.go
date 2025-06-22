@@ -2,14 +2,14 @@ package routes
 
 import (
 	"encoding/json"
-	"net/http"
-	"time"
-
 	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
 	"github.com/farovictor/bifrost/pkg/utils"
+	"net/http"
+	"strings"
+	"time"
 )
 
 // UserStore provides access to persisted users.
@@ -105,4 +105,54 @@ func buildAuthToken(userID, orgID string) (string, error) {
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}
 	return auth.Sign(t)
+}
+
+// GetUserInfo handles GET /user and returns details about the authenticated user.
+func GetUserInfo(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	raw := strings.TrimPrefix(authHeader, "Bearer ")
+	tok, err := auth.Verify(raw)
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	u, err := UserStore.Get(tok.UserID)
+	if err != nil {
+		if err == users.ErrUserNotFound {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	type orgInfo struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+
+	var orgsInfo []orgInfo
+	for _, m := range MembershipStore.List() {
+		if m.UserID != u.ID {
+			continue
+		}
+		if o, err := OrgStore.Get(m.OrgID); err == nil {
+			orgsInfo = append(orgsInfo, orgInfo{ID: o.ID, Name: o.Name})
+		}
+	}
+
+	resp := struct {
+		ID    string    `json:"id"`
+		Name  string    `json:"name"`
+		Email string    `json:"email"`
+		Orgs  []orgInfo `json:"orgs,omitempty"`
+	}{ID: u.ID, Name: u.Name, Email: u.Email, Orgs: orgsInfo}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
