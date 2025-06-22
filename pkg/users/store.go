@@ -1,9 +1,10 @@
 package users
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 // Store defines the persistence behavior for User objects.
@@ -28,13 +29,14 @@ func NewMemoryStore() *MemoryStore {
 }
 
 // NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *sql.DB) *PostgresStore {
+func NewPostgresStore(db *gorm.DB) *PostgresStore {
+	db.AutoMigrate(&User{})
 	return &PostgresStore{db: db}
 }
 
 // PostgresStore persists users in a PostgreSQL database.
 type PostgresStore struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // Create inserts a new User. Returns error if ID already exists.
@@ -100,21 +102,20 @@ func (s *MemoryStore) Update(u User) error {
 
 // Create inserts a new user into the database.
 func (s *PostgresStore) Create(u User) error {
-	_, err := s.db.Exec("INSERT INTO users (id, api_key) VALUES ($1, $2)", u.ID, u.APIKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.Create(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrUserExists
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // Get retrieves a user by ID.
 func (s *PostgresStore) Get(id string) (User, error) {
 	var u User
-	row := s.db.QueryRow("SELECT id, api_key FROM users WHERE id=$1", id)
-	if err := row.Scan(&u.ID, &u.APIKey); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.First(&u, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, err
@@ -125,9 +126,8 @@ func (s *PostgresStore) Get(id string) (User, error) {
 // GetByAPIKey retrieves a user by API key.
 func (s *PostgresStore) GetByAPIKey(key string) (User, error) {
 	var u User
-	row := s.db.QueryRow("SELECT id, api_key FROM users WHERE api_key=$1", key)
-	if err := row.Scan(&u.ID, &u.APIKey); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.First(&u, "api_key = ?", key).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return User{}, ErrUserNotFound
 		}
 		return User{}, err
@@ -137,12 +137,11 @@ func (s *PostgresStore) GetByAPIKey(key string) (User, error) {
 
 // Delete removes a user by ID.
 func (s *PostgresStore) Delete(id string) error {
-	res, err := s.db.Exec("DELETE FROM users WHERE id=$1", id)
-	if err != nil {
-		return err
+	res := s.db.Delete(&User{}, "id = ?", id)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrUserNotFound
 	}
 	return nil
@@ -150,12 +149,11 @@ func (s *PostgresStore) Delete(id string) error {
 
 // Update modifies an existing user.
 func (s *PostgresStore) Update(u User) error {
-	res, err := s.db.Exec("UPDATE users SET api_key=$1 WHERE id=$2", u.APIKey, u.ID)
-	if err != nil {
-		return err
+	res := s.db.Model(&User{}).Where("id = ?", u.ID).Updates(u)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrUserNotFound
 	}
 	return nil

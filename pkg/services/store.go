@@ -1,9 +1,10 @@
 package services
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 // Store defines persistence behavior for Service objects.
@@ -25,13 +26,14 @@ func NewMemoryStore() *MemoryStore {
 }
 
 // NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *sql.DB) *PostgresStore {
+func NewPostgresStore(db *gorm.DB) *PostgresStore {
+	db.AutoMigrate(&Service{})
 	return &PostgresStore{db: db}
 }
 
 // PostgresStore persists services in PostgreSQL.
 type PostgresStore struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // Create inserts a new Service. Returns an error if the ID already exists.
@@ -69,21 +71,20 @@ func (s *MemoryStore) Delete(id string) error {
 
 // Create inserts a service into the database.
 func (s *PostgresStore) Create(svc Service) error {
-	_, err := s.db.Exec("INSERT INTO services (id, endpoint, root_key_id) VALUES ($1,$2,$3)", svc.ID, svc.Endpoint, svc.RootKeyID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.Create(&svc).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrServiceExists
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // Get retrieves a service by ID.
 func (s *PostgresStore) Get(id string) (Service, error) {
 	var svc Service
-	row := s.db.QueryRow("SELECT id, endpoint, root_key_id FROM services WHERE id=$1", id)
-	if err := row.Scan(&svc.ID, &svc.Endpoint, &svc.RootKeyID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.First(&svc, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Service{}, ErrServiceNotFound
 		}
 		return Service{}, err
@@ -93,12 +94,11 @@ func (s *PostgresStore) Get(id string) (Service, error) {
 
 // Delete removes a service.
 func (s *PostgresStore) Delete(id string) error {
-	res, err := s.db.Exec("DELETE FROM services WHERE id=$1", id)
-	if err != nil {
-		return err
+	res := s.db.Delete(&Service{}, "id = ?", id)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrServiceNotFound
 	}
 	return nil

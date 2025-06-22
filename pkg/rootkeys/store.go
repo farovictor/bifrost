@@ -1,9 +1,10 @@
 package rootkeys
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 // Store defines persistence behavior for RootKey objects.
@@ -26,13 +27,14 @@ func NewMemoryStore() *MemoryStore {
 }
 
 // NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *sql.DB) *PostgresStore {
+func NewPostgresStore(db *gorm.DB) *PostgresStore {
+	db.AutoMigrate(&RootKey{})
 	return &PostgresStore{db: db}
 }
 
 // PostgresStore persists RootKeys in PostgreSQL.
 type PostgresStore struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // Create inserts a new RootKey. Returns error if ID already exists.
@@ -81,21 +83,20 @@ func (s *MemoryStore) Update(k RootKey) error {
 
 // Create inserts a root key into the database.
 func (s *PostgresStore) Create(k RootKey) error {
-	_, err := s.db.Exec("INSERT INTO root_keys (id, api_key) VALUES ($1,$2)", k.ID, k.APIKey)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.Create(&k).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrKeyExists
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // Get retrieves a root key by ID.
 func (s *PostgresStore) Get(id string) (RootKey, error) {
 	var k RootKey
-	row := s.db.QueryRow("SELECT id, api_key FROM root_keys WHERE id=$1", id)
-	if err := row.Scan(&k.ID, &k.APIKey); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.First(&k, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return RootKey{}, ErrKeyNotFound
 		}
 		return RootKey{}, err
@@ -105,12 +106,11 @@ func (s *PostgresStore) Get(id string) (RootKey, error) {
 
 // Delete removes a root key.
 func (s *PostgresStore) Delete(id string) error {
-	res, err := s.db.Exec("DELETE FROM root_keys WHERE id=$1", id)
-	if err != nil {
-		return err
+	res := s.db.Delete(&RootKey{}, "id = ?", id)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrKeyNotFound
 	}
 	return nil
@@ -118,12 +118,11 @@ func (s *PostgresStore) Delete(id string) error {
 
 // Update replaces a root key.
 func (s *PostgresStore) Update(k RootKey) error {
-	res, err := s.db.Exec("UPDATE root_keys SET api_key=$1 WHERE id=$2", k.APIKey, k.ID)
-	if err != nil {
-		return err
+	res := s.db.Model(&RootKey{}).Where("id = ?", k.ID).Updates(k)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrKeyNotFound
 	}
 	return nil
