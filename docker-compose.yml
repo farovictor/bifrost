@@ -10,8 +10,10 @@ services:
       REDIS_ADDR: "redis:6379"
       POSTGRES_DSN: "postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable"
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
     networks:
       - internal
 
@@ -30,6 +32,12 @@ services:
       POSTGRES_USER: bifrost
       POSTGRES_PASSWORD: bifrost
       POSTGRES_DB: bifrost
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bifrost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     ports:
       - "5432:5432"
     volumes:
