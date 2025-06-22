@@ -64,3 +64,9 @@ func MetricsEnabled() bool {
 		return false
 	}
 }
+
+// PostgresDSN returns the DSN string for connecting to Postgres.
+// It reads the POSTGRES_DSN environment variable and may be empty if unset.
+func PostgresDSN() string {
+	return os.Getenv("POSTGRES_DSN")
+}
