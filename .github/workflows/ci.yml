@@ -37,14 +37,14 @@ jobs:
       - name: Test
         run: go test ./...
 
-  docker-build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # docker-build:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t bifrost:local .
+  #     - name: Build Docker image
+  #       run: docker build -t bifrost:local .
 
   init-check:
     runs-on: ubuntu-latest
@@ -75,4 +75,8 @@ jobs:
         run: docker build -t bifrost:test .
 
       - name: Run bifrost check
-        run: docker compose run --rm -e REDIS_ADDR=localhost:${{ job.services.redis.ports['6379'] }} -e POSTGRES_DSN=postgres://bifrost:bifrost@localhost:${{ job.services.postgres.ports['5432'] }}/bifrost?sslmode=disable bifrost bifrost check
+        run: |
+          docker compose run --rm \
+            -e REDIS_ADDR=localhost:${{ job.services.redis.ports['6379'] }} \
+            -e POSTGRES_DSN=postgres://bifrost:bifrost@localhost:${{ job.services.postgres.ports['5432'] }}/bifrost?sslmode=disable \
+            bifrost bifrost check
