@@ -62,26 +62,32 @@ func main() {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
-		r.Use(rl.AuthMiddleware())
-		r.Use(rl.OrgCtxMiddleware())
-		r.Get("/hello", v1.SayHello)
 
-		r.Post("/users", routes.CreateUser)
-		r.Get("/user", routes.GetUserInfo)
+		// Endpoints that only require the auth token
+		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
+		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
 
-		r.Post("/keys", routes.CreateKey)
-		r.Delete("/keys/{id}", routes.DeleteKey)
+		// Endpoints requiring API key and auth token
+		r.Group(func(r chi.Router) {
+			r.Use(rl.AuthMiddleware())
+			r.Use(rl.OrgCtxMiddleware())
 
-		r.Post("/rootkeys", routes.CreateRootKey)
-		r.Put("/rootkeys/{id}", routes.UpdateRootKey)
-		r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
+			r.Get("/hello", v1.SayHello)
 
-		r.Post("/services", routes.CreateService)
-		r.Delete("/services/{id}", routes.DeleteService)
+			r.Post("/keys", routes.CreateKey)
+			r.Delete("/keys/{id}", routes.DeleteKey)
 
-		r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+			r.Post("/rootkeys", routes.CreateRootKey)
+			r.Put("/rootkeys/{id}", routes.UpdateRootKey)
+			r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
 
-		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+			r.Post("/services", routes.CreateService)
+			r.Delete("/services/{id}", routes.DeleteService)
+
+			r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+
+			r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+		})
 	})
 
 	if config.MetricsEnabled() {

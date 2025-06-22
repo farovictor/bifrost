@@ -20,11 +20,13 @@ import (
 func setupOrgCtxRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(rl.AuthMiddleware())
-		r.Use(rl.OrgCtxMiddleware())
-		r.Post("/users", routes.CreateUser)
-		r.Get("/ctx", func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(rl.OrgFromContext(r.Context()))
+		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
+		r.Group(func(r chi.Router) {
+			r.Use(rl.AuthMiddleware())
+			r.Use(rl.OrgCtxMiddleware())
+			r.Get("/ctx", func(w http.ResponseWriter, r *http.Request) {
+				json.NewEncoder(w).Encode(rl.OrgFromContext(r.Context()))
+			})
 		})
 	})
 	return r
@@ -77,7 +79,6 @@ func TestUserCreationOrgContext(t *testing.T) {
 			body, _ := json.Marshal(payload)
 
 			req := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body))
-			req.Header.Set("X-API-Key", admin.APIKey)
 			req.Header.Set("Authorization", "Bearer "+makeToken(admin.ID))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)

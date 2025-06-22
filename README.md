@@ -227,8 +227,8 @@ go run ./cmd/bifrost user-add --id admin --org-name demo-org --role owner
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
 
-The generated API key must be provided in the `X-API-Key` or `Authorization`
-header when calling any `/v1` endpoint. Along with the key, include the
+Most `/v1` endpoints require your API key in the `X-API-Key` or
+`Authorization` header. The `/v1/users` and `/v1/user` routes only require the
 **auth token** returned by `user-add` in the `Authorization` header as a Bearer
 token. The token expires after 24 hours and is used to resolve organization
 context for each request.
@@ -262,8 +262,10 @@ curl -H "X-Virtual-Key: demo-key" http://localhost:3333/v1/proxy/hello
 The CLI commands above are thin wrappers around a simple HTTP interface. The
 server listens on `http://localhost:3333` by default.
 
-All routes under `/v1` (except `/healthz` and `/version`) require a valid API
-key supplied via the `X-API-Key` or `Authorization` header.
+All routes under `/v1` except `/healthz`, `/version`, `/users` and `/user`
+require a valid API key supplied via the `X-API-Key` or `Authorization`
+header. The `/users` and `/user` endpoints only require the authentication
+token in the `Authorization` header.
 
 ### Issue a key
 POST `/v1/keys` with a JSON body describing the key. The response echoes the
@@ -325,7 +327,6 @@ Example:
 ```bash
 curl -X POST http://localhost:3333/v1/users \
   -H 'Content-Type: application/json' \
-  -H 'X-API-Key: <api_key>' \
   -H 'Authorization: Bearer <token>' \
   -d '{"id":"admin","org_name":"demo-org","role":"owner"}'
 ```
@@ -335,7 +336,6 @@ GET `/v1/user` returns the authenticated user's details and organizations.
 
 ```bash
 curl http://localhost:3333/v1/user \
-  -H 'X-API-Key: <api_key>' \
   -H 'Authorization: Bearer <token>'
 ```
 
