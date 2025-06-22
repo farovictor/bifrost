@@ -65,6 +65,7 @@ Bifrost can be configured through the following environment variables:
 | `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
 | `REDIS_DB` | numeric Redis DB index to use | `0` |
 | `REDIS_PROTOCOL` | Redis protocol version | `3` |
+| `POSTGRES_DSN` | connection string for PostgreSQL | *(empty)* |
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
