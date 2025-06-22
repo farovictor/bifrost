@@ -12,6 +12,8 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+      setup-job:
+        condition: service_completed_successfully
     networks:
       - internal
 
@@ -24,6 +26,23 @@ services:
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
     entrypoint: ["/app/bifrost-cli"]
+    networks:
+      - internal
+
+  setup-job:
+    build: .
+    environment:
+      BIFROST_PORT: "3333"
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+    entrypoint: ["/app/bifrost-cli"]
+    command: ["user-add", "--name", "admin", "--org-name", "demo-org", "--email", "admin@admin.com"]
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: "no"
     networks:
       - internal
 
