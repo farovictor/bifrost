@@ -15,6 +15,7 @@ var serverAddr string
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&serverAddr, "addr", "http://localhost:3333", "bifrost API address")
+	rootCmd.AddCommand(checkCmd)
 }
 
 func Execute() {
