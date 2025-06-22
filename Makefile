@@ -16,7 +16,9 @@ run:
 
 # compose-up: start Docker Compose environment
 compose-up:
-	docker compose up -d --build
+		@docker compose up -d --build
+	@token=$$(docker compose logs setup-job | tail -n 1 | awk '{print $$3}'); \
+	echo "Your token is: $$token"
 
 # compose-down: stop Docker Compose environment
 compose-down:
