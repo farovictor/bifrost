@@ -1,0 +1,4 @@
+**/bifrost*
+**.*log
+**/*.out
+.envrc
