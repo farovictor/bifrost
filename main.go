@@ -67,6 +67,7 @@ func main() {
 		r.Get("/hello", v1.SayHello)
 
 		r.Post("/users", routes.CreateUser)
+		r.Get("/user", routes.GetUserInfo)
 
 		r.Post("/keys", routes.CreateKey)
 		r.Delete("/keys/{id}", routes.DeleteKey)
