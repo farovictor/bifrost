@@ -1,9 +1,10 @@
 package orgs
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 // Store defines persistence behavior for Organization objects.
@@ -27,13 +28,14 @@ func NewMemoryStore() *MemoryStore {
 }
 
 // NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *sql.DB) *PostgresStore {
+func NewPostgresStore(db *gorm.DB) *PostgresStore {
+	db.AutoMigrate(&Organization{})
 	return &PostgresStore{db: db}
 }
 
 // PostgresStore persists organizations in PostgreSQL.
 type PostgresStore struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 // Create inserts a new Organization. Returns error if ID already exists.
@@ -93,21 +95,20 @@ func (s *MemoryStore) List() []Organization {
 
 // Create inserts an organization into the database.
 func (s *PostgresStore) Create(o Organization) error {
-	_, err := s.db.Exec("INSERT INTO organizations (id, name) VALUES ($1, $2)", o.ID, o.Name)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.Create(&o).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrOrgExists
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // Get retrieves an organization by ID.
 func (s *PostgresStore) Get(id string) (Organization, error) {
 	var o Organization
-	row := s.db.QueryRow("SELECT id, name FROM organizations WHERE id=$1", id)
-	if err := row.Scan(&o.ID, &o.Name); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+	if err := s.db.First(&o, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Organization{}, ErrOrgNotFound
 		}
 		return Organization{}, err
@@ -117,12 +118,11 @@ func (s *PostgresStore) Get(id string) (Organization, error) {
 
 // Delete removes an organization.
 func (s *PostgresStore) Delete(id string) error {
-	res, err := s.db.Exec("DELETE FROM organizations WHERE id=$1", id)
-	if err != nil {
-		return err
+	res := s.db.Delete(&Organization{}, "id = ?", id)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrOrgNotFound
 	}
 	return nil
@@ -130,12 +130,11 @@ func (s *PostgresStore) Delete(id string) error {
 
 // Update replaces an organization.
 func (s *PostgresStore) Update(o Organization) error {
-	res, err := s.db.Exec("UPDATE organizations SET name=$1 WHERE id=$2", o.Name, o.ID)
-	if err != nil {
-		return err
+	res := s.db.Model(&Organization{}).Where("id = ?", o.ID).Updates(o)
+	if res.Error != nil {
+		return res.Error
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
+	if res.RowsAffected == 0 {
 		return ErrOrgNotFound
 	}
 	return nil
@@ -143,18 +142,9 @@ func (s *PostgresStore) Update(o Organization) error {
 
 // List returns all organizations.
 func (s *PostgresStore) List() []Organization {
-	rows, err := s.db.Query("SELECT id, name FROM organizations")
-	if err != nil {
-		return nil
-	}
-	defer rows.Close()
 	var out []Organization
-	for rows.Next() {
-		var o Organization
-		if err := rows.Scan(&o.ID, &o.Name); err != nil {
-			continue
-		}
-		out = append(out, o)
+	if err := s.db.Find(&out).Error; err != nil {
+		return nil
 	}
 	return out
 }

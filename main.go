@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 
 	"github.com/farovictor/bifrost/config"
@@ -20,6 +19,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -34,11 +35,15 @@ func main() {
 		routes.OrgStore = orgs.NewMemoryStore()
 		routes.MembershipStore = orgs.NewMembershipStore()
 	} else {
-		db, err := sql.Open("postgres", dsn)
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			logging.Logger.Fatal().Err(err).Msg("connect postgres")
 		}
-		if err := db.Ping(); err != nil {
+		sqlDB, err := db.DB()
+		if err != nil {
+			logging.Logger.Fatal().Err(err).Msg("db access")
+		}
+		if err := sqlDB.Ping(); err != nil {
 			logging.Logger.Fatal().Err(err).Msg("ping postgres")
 		}
 
