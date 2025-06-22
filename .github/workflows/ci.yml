@@ -32,7 +32,7 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build ./...
+        run: make build
 
       - name: Test
         run: make test
