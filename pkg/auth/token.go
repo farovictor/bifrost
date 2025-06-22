@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/farovictor/bifrost/pkg/logging"
 )
 
 // AuthToken represents an authentication token for API users.
@@ -25,12 +27,19 @@ var signingKey = loadKey()
 // variable. If the variable is empty or invalid base64, a random key is
 // generated instead.
 func loadKey() []byte {
-	if v := os.Getenv("BIFROST_SIGNING_KEY"); v != "" {
-		if b, err := base64.StdEncoding.DecodeString(v); err == nil {
-			return b
-		}
+	v := os.Getenv("BIFROST_SIGNING_KEY")
+	if v == "" {
+		logging.Logger.Warn().Msg("BIFROST_SIGNING_KEY not set, generating random key")
+		return generateKey()
 	}
-	return generateKey()
+
+	b, err := base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("invalid BIFROST_SIGNING_KEY, generating random key")
+		return generateKey()
+	}
+
+	return b
 }
 
 // generateKey creates a new random signing key.
