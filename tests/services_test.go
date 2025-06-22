@@ -14,9 +14,9 @@ import (
 )
 
 func TestCreateService(t *testing.T) {
-	routes.ServiceStore = services.NewStore()
-	routes.RootKeyStore = rootkeys.NewStore()
-	routes.UserStore = users.NewStore()
+	routes.ServiceStore = services.NewMemoryStore()
+	routes.RootKeyStore = rootkeys.NewMemoryStore()
+	routes.UserStore = users.NewMemoryStore()
 	u := users.User{ID: "u", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
@@ -47,9 +47,9 @@ func TestCreateService(t *testing.T) {
 }
 
 func TestDeleteService(t *testing.T) {
-	routes.ServiceStore = services.NewStore()
-	routes.RootKeyStore = rootkeys.NewStore()
-	routes.UserStore = users.NewStore()
+	routes.ServiceStore = services.NewMemoryStore()
+	routes.RootKeyStore = rootkeys.NewMemoryStore()
+	routes.UserStore = users.NewMemoryStore()
 	u := users.User{ID: "u", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rkdead", APIKey: "k"}

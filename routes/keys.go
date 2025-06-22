@@ -13,7 +13,7 @@ import (
 )
 
 // KeyStore holds the active VirtualKeys in memory.
-var KeyStore = keys.NewStore()
+var KeyStore = keys.NewMemoryStore()
 
 // CreateKey handles POST /keys and stores a new VirtualKey.
 func CreateKey(w http.ResponseWriter, r *http.Request) {

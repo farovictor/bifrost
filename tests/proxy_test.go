@@ -27,10 +27,10 @@ func TestProxy(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			routes.ServiceStore = services.NewStore()
-			routes.KeyStore = keys.NewStore()
-			routes.RootKeyStore = rootkeys.NewStore()
-			routes.UserStore = users.NewStore()
+			routes.ServiceStore = services.NewMemoryStore()
+			routes.KeyStore = keys.NewMemoryStore()
+			routes.RootKeyStore = rootkeys.NewMemoryStore()
+			routes.UserStore = users.NewMemoryStore()
 			u := users.User{ID: "u", APIKey: "secret"}
 			routes.UserStore.Create(u)
 
@@ -105,10 +105,10 @@ func TestProxyScopeEnforcement(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			routes.ServiceStore = services.NewStore()
-			routes.KeyStore = keys.NewStore()
-			routes.RootKeyStore = rootkeys.NewStore()
-			routes.UserStore = users.NewStore()
+			routes.ServiceStore = services.NewMemoryStore()
+			routes.KeyStore = keys.NewMemoryStore()
+			routes.RootKeyStore = rootkeys.NewMemoryStore()
+			routes.UserStore = users.NewMemoryStore()
 			u := users.User{ID: "u", APIKey: "secret"}
 			routes.UserStore.Create(u)
 

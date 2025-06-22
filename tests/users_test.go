@@ -15,8 +15,8 @@ import (
 )
 
 func TestCreateUserReturnsToken(t *testing.T) {
-	routes.UserStore = users.NewStore()
-	routes.OrgStore = orgs.NewStore()
+	routes.UserStore = users.NewMemoryStore()
+	routes.OrgStore = orgs.NewMemoryStore()
 	routes.MembershipStore = orgs.NewMembershipStore()
 
 	admin := users.User{ID: "admin", APIKey: "secret"}

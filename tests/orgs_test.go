@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateGetOrg(t *testing.T) {
-	routes.OrgStore = orgs.NewStore()
+	routes.OrgStore = orgs.NewMemoryStore()
 	o := orgs.Organization{ID: "org1", Name: "Test Org"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("create: %v", err)
@@ -23,7 +23,7 @@ func TestCreateGetOrg(t *testing.T) {
 }
 
 func TestUpdateOrg(t *testing.T) {
-	routes.OrgStore = orgs.NewStore()
+	routes.OrgStore = orgs.NewMemoryStore()
 	o := orgs.Organization{ID: "org1", Name: "Old"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("seed: %v", err)
@@ -42,7 +42,7 @@ func TestUpdateOrg(t *testing.T) {
 }
 
 func TestDeleteOrg(t *testing.T) {
-	routes.OrgStore = orgs.NewStore()
+	routes.OrgStore = orgs.NewMemoryStore()
 	o := orgs.Organization{ID: "org1", Name: "Del"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("seed: %v", err)

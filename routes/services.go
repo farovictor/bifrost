@@ -12,7 +12,7 @@ import (
 )
 
 // ServiceStore holds defined services in memory.
-var ServiceStore = services.NewStore()
+var ServiceStore = services.NewMemoryStore()
 
 // CreateService handles POST /services to store a new Service.
 func CreateService(w http.ResponseWriter, r *http.Request) {

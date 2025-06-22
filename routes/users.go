@@ -14,7 +14,7 @@ import (
 )
 
 // UserStore holds registered users in memory.
-var UserStore = users.NewStore()
+var UserStore = users.NewMemoryStore()
 
 // CreateUser handles POST /users and generates an API key.
 func CreateUser(w http.ResponseWriter, r *http.Request) {
