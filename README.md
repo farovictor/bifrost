@@ -16,7 +16,7 @@ make run
 ## Running with Docker Compose
 
 The repository provides a `docker-compose.yml` that starts Bifrost together with
-Redis. Make sure both **Docker** and **Docker Compose** are installed, then run:
+Redis and PostgreSQL. Make sure both **Docker** and **Docker Compose** are installed, then run:
 
 ```bash
 docker-compose up -d
@@ -37,6 +37,14 @@ go test ./...
 
 See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
+
+The Compose file sets `POSTGRES_DSN` for Bifrost to connect to the bundled
+PostgreSQL service. If you run the server manually, configure the variable like
+so:
+
+```bash
+export POSTGRES_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable"
+```
 
 ## Example Request
 
