@@ -96,3 +96,23 @@ func AdminEmail() string {
 	}
 	return email
 }
+
+// AdminOrgID returns the ID for the initial admin organization.
+// It reads BIFROST_ADMIN_ORG_ID and defaults to "admin-org" when unset.
+func AdminOrgID() string {
+	id := os.Getenv("BIFROST_ADMIN_ORG_ID")
+	if id == "" {
+		id = "admin-org"
+	}
+	return id
+}
+
+// AdminOrgName returns the name for the initial admin organization.
+// It reads BIFROST_ADMIN_ORG_NAME and defaults to "Admin" when unset.
+func AdminOrgName() string {
+	name := os.Getenv("BIFROST_ADMIN_ORG_NAME")
+	if name == "" {
+		name = "Admin"
+	}
+	return name
+}

@@ -11,8 +11,10 @@ import (
 )
 
 var (
-	initAdminName  string
-	initAdminEmail string
+	initAdminName    string
+	initAdminEmail   string
+	initAdminOrgID   string
+	initAdminOrgName string
 )
 
 var initAdminCmd = &cobra.Command{
@@ -60,5 +62,7 @@ var initAdminCmd = &cobra.Command{
 func init() {
 	initAdminCmd.Flags().StringVar(&initAdminName, "name", config.AdminName(), "admin user name")
 	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", config.AdminEmail(), "admin user email")
+	initAdminCmd.Flags().StringVar(&initAdminOrgID, "org-id", config.AdminOrgID(), "admin organization id")
+	initAdminCmd.Flags().StringVar(&initAdminOrgName, "org-name", config.AdminOrgName(), "admin organization name")
 	rootCmd.AddCommand(initAdminCmd)
 }
