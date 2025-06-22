@@ -12,5 +12,7 @@ environment variables. Key variables include:
 - `BIFROST_ENABLE_METRICS` – enable Prometheus metrics when set
 - `BIFROST_ADMIN_ID` – ID for the initial admin user (default `admin`)
 - `BIFROST_ADMIN_API_KEY` – API key for the admin, random when unset
+- `BIFROST_ADMIN_ORG_ID` – ID for the admin organization (default `admin-org`)
+- `BIFROST_ADMIN_ORG_NAME` – name for the admin organization (default `Admin`)
 
 See the project `README.md` for more details and examples.
