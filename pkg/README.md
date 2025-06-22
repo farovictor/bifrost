@@ -8,6 +8,7 @@ The `pkg` directory contains reusable libraries and in-memory stores:
 - `services` – registered service models and store
 - `users` – API user models and store
 - `orgs` – organizations and memberships
+- `database` – Postgres connection helpers
 - `logging` – zero log helpers
 - `metrics` – Prometheus metric collectors
 - `version` – application version information

@@ -1,13 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/farovictor/bifrost/config"
+	"github.com/farovictor/bifrost/pkg/database"
 	"github.com/spf13/cobra"
 )
 
@@ -19,14 +19,12 @@ var migrateCmd = &cobra.Command{
 		if dsn == "" {
 			return fmt.Errorf("POSTGRES_DSN is not set")
 		}
-		db, err := sql.Open("postgres", dsn)
+		db, err := database.Connect(dsn)
 		if err != nil {
 			return err
 		}
-		defer db.Close()
-		if err := db.Ping(); err != nil {
-			return err
-		}
+		sqlDB, _ := db.DB()
+		defer sqlDB.Close()
 		files, err := filepath.Glob(filepath.Join("migrations", "*.sql"))
 		if err != nil {
 			return err
@@ -37,7 +35,7 @@ var migrateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			if _, err := db.Exec(string(b)); err != nil {
+			if err := db.Exec(string(b)).Error; err != nil {
 				return fmt.Errorf("%s: %w", f, err)
 			}
 		}
