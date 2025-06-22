@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,10 +32,10 @@ jobs:
         run: go mod download
 
       - name: Build
-        run: go build ./...
+        run: make build
 
       - name: Test
-        run: go test ./...
+        run: make test
 
   # docker-build:
   #   runs-on: ubuntu-latest
