@@ -9,6 +9,8 @@ Common commands include:
 - `rootkey-add`, `rootkey-update`, `rootkey-delete` – manage root keys
 - `user-add` – create an API user
 - `migrate` – apply SQL migrations in `migrations/`
+- `init-admin` – create an admin user in the database
+  (uses `BIFROST_ADMIN_ID` and `BIFROST_ADMIN_API_KEY` if set)
 
 All commands talk to `http://localhost:3333` by default. Use `--addr` to
 override the API address.

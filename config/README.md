@@ -10,5 +10,7 @@ environment variables. Key variables include:
 - `REDIS_PROTOCOL` – Redis protocol version (default `3`)
 - `POSTGRES_DSN` – Postgres connection string
 - `BIFROST_ENABLE_METRICS` – enable Prometheus metrics when set
+- `BIFROST_ADMIN_ID` – ID for the initial admin user (default `admin`)
+- `BIFROST_ADMIN_API_KEY` – API key for the admin, random when unset
 
 See the project `README.md` for more details and examples.
