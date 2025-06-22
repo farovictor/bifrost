@@ -17,6 +17,18 @@ services:
     networks:
       - internal
 
+  cli:
+    build: .
+    profiles:
+      - cli
+    environment:
+      BIFROST_PORT: "3333"
+      REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+    entrypoint: ["/app/bifrost-cli"]
+    networks:
+      - internal
+
   redis:
     image: redis:7-alpine
     ports:
