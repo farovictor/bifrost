@@ -35,7 +35,7 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test ./...
+        run: make test
 
   # docker-build:
   #   runs-on: ubuntu-latest
