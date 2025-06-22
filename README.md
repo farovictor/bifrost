@@ -66,6 +66,16 @@ Run the suite with:
 go test ./...
 ```
 
+### Code Coverage
+
+The existing test suite covers **40.4%** of the codebase. Generate a
+coverage report with:
+
+```bash
+go test ./... -coverprofile=coverage.out
+go tool cover -func=coverage.out
+```
+
 ### Configuration via Environment Variables
 
 Bifrost can be configured through the following environment variables:
