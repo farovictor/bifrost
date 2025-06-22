@@ -22,6 +22,10 @@ Redis and PostgreSQL. Make sure both **Docker** and **Docker Compose** are insta
 docker-compose up -d
 ```
 
+The stack runs a one-off `setup-job` that creates an `admin` user in the
+`demo-org` organization. The `bifrost` service only starts once this job
+completes successfully.
+
 This brings up the stack in the background on the default ports. When finished,
 tear it down with:
 
