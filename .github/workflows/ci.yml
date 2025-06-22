@@ -76,8 +76,7 @@ jobs:
 
       - name: Run bifrost check
         run: |
-          docker compose up --rm --no-deps \
+          docker compose up bifrost \
             -e REDIS_ADDR=localhost:${{ job.services.redis.ports['6379'] }} \
             -e POSTGRES_DSN=postgres://bifrost:bifrost@localhost:${{ job.services.postgres.ports['5432'] }}/bifrost?sslmode=disable \
-            bifrost \
             /app/bifrost-cli check
