@@ -21,7 +21,7 @@ func TestCreateKey(t *testing.T) {
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
@@ -58,7 +58,7 @@ func TestCreateKey(t *testing.T) {
 func TestDeleteKey(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	k := keys.VirtualKey{ID: "dead", Scope: "x", Target: "svc", ExpiresAt: time.Now(), RateLimit: 1}
 	if err := routes.KeyStore.Create(k); err != nil {
@@ -86,7 +86,7 @@ func TestCreateKeyExampleJSON(t *testing.T) {
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk2", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {

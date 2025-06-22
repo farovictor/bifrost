@@ -15,7 +15,7 @@ import (
 func TestCreateRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()
 
@@ -43,7 +43,7 @@ func TestCreateRootKey(t *testing.T) {
 func TestDeleteRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "dead", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
@@ -67,7 +67,7 @@ func TestDeleteRootKey(t *testing.T) {
 func TestUpdateRootKey(t *testing.T) {
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	orig := rootkeys.RootKey{ID: "rk", APIKey: "old"}
 	if err := routes.RootKeyStore.Create(orig); err != nil {

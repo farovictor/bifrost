@@ -9,7 +9,7 @@ import (
 
 func TestCreateGetOrg(t *testing.T) {
 	routes.OrgStore = orgs.NewMemoryStore()
-	o := orgs.Organization{ID: "org1", Name: "Test Org"}
+	o := orgs.Organization{ID: "org1", Name: "Test Org", Domain: "example.com", Email: "org@example.com"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -24,11 +24,11 @@ func TestCreateGetOrg(t *testing.T) {
 
 func TestUpdateOrg(t *testing.T) {
 	routes.OrgStore = orgs.NewMemoryStore()
-	o := orgs.Organization{ID: "org1", Name: "Old"}
+	o := orgs.Organization{ID: "org1", Name: "Old", Domain: "example.com", Email: "org@example.com"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
-	updated := orgs.Organization{ID: "org1", Name: "New"}
+	updated := orgs.Organization{ID: "org1", Name: "New", Domain: "example.com", Email: "org@example.com"}
 	if err := routes.OrgStore.Update(updated); err != nil {
 		t.Fatalf("update: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestUpdateOrg(t *testing.T) {
 
 func TestDeleteOrg(t *testing.T) {
 	routes.OrgStore = orgs.NewMemoryStore()
-	o := orgs.Organization{ID: "org1", Name: "Del"}
+	o := orgs.Organization{ID: "org1", Name: "Del", Domain: "example.com", Email: "org@example.com"}
 	if err := routes.OrgStore.Create(o); err != nil {
 		t.Fatalf("seed: %v", err)
 	}

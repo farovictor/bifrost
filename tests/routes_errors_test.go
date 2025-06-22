@@ -19,7 +19,7 @@ import (
 func TestCreateKeyInvalidJSON(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()
 
@@ -42,7 +42,7 @@ func TestCreateKeyDuplicate(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: "rk"}
 	if err := routes.ServiceStore.Create(svc); err != nil {
@@ -73,7 +73,7 @@ func TestCreateKeyDuplicate(t *testing.T) {
 func TestDeleteKeyNotFound(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()
 
@@ -96,7 +96,7 @@ func TestCreateKeyMissingService(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()
 
@@ -126,7 +126,7 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-scope", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
@@ -159,7 +159,7 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-empty", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {
@@ -192,7 +192,7 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	routes.ServiceStore = services.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-exp", APIKey: "k"}
 	if err := routes.RootKeyStore.Create(rk); err != nil {

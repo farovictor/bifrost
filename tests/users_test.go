@@ -19,12 +19,12 @@ func TestCreateUserReturnsToken(t *testing.T) {
 	routes.OrgStore = orgs.NewMemoryStore()
 	routes.MembershipStore = orgs.NewMembershipStore()
 
-	admin := users.User{ID: "admin", APIKey: "secret"}
+	admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "secret"}
 	routes.UserStore.Create(admin)
 
 	router := setupRouter()
 
-	payload := `{"id":"new"}`
+	payload := `{"name":"New User","email":"new@example.com"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))
 	req.Header.Set("X-API-Key", admin.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(admin.ID))
@@ -42,8 +42,11 @@ func TestCreateUserReturnsToken(t *testing.T) {
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if resp.ID != "new" {
-		t.Fatalf("unexpected id: %s", resp.ID)
+	if resp.ID == "" {
+		t.Fatalf("missing id")
+	}
+	if resp.Name != "New User" || resp.Email != "new@example.com" {
+		t.Fatalf("unexpected user data: %#v", resp.User)
 	}
 	if resp.Token == "" {
 		t.Fatalf("missing token")

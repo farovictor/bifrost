@@ -17,7 +17,8 @@ var UserStore users.Store
 // CreateUser handles POST /users and generates an API key.
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		ID      string `json:"id"`
+		Name    string `json:"name"`
+		Email   string `json:"email"`
 		OrgID   string `json:"org_id"`
 		OrgName string `json:"org_name"`
 		Role    string `json:"role"`
@@ -26,7 +27,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	if req.ID == "" {
+	if req.Name == "" || req.Email == "" {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
@@ -40,7 +41,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := users.User{ID: req.ID, APIKey: users.GenerateAPIKey()}
+	u := users.User{ID: users.GenerateID(), Name: req.Name, Email: req.Email, APIKey: users.GenerateAPIKey()}
 	if err := UserStore.Create(u); err != nil {
 		switch err {
 		case users.ErrUserExists:
@@ -53,7 +54,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var orgID string
 	if req.OrgName != "" && req.OrgID == "" {
-		o := orgs.Organization{ID: users.GenerateAPIKey(), Name: req.OrgName}
+		o := orgs.Organization{ID: orgs.GenerateID(), Name: req.OrgName}
 		if err := OrgStore.Create(o); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return

@@ -72,7 +72,7 @@ func TestVersion(t *testing.T) {
 
 func TestV1Hello(t *testing.T) {
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)

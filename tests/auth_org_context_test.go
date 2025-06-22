@@ -58,16 +58,16 @@ func TestUserCreationOrgContext(t *testing.T) {
 			routes.OrgStore = orgs.NewMemoryStore()
 			routes.MembershipStore = orgs.NewMembershipStore()
 
-			admin := users.User{ID: "admin", APIKey: "admink"}
+			admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "admink"}
 			routes.UserStore.Create(admin)
 
 			if tc.orgID != "" {
-				routes.OrgStore.Create(orgs.Organization{ID: tc.orgID, Name: "Existing Org"})
+				routes.OrgStore.Create(orgs.Organization{ID: tc.orgID, Name: "Existing Org", Domain: "example.com", Email: "org@example.com"})
 			}
 
 			router := setupOrgCtxRouter()
 
-			payload := map[string]string{"id": "new"}
+			payload := map[string]string{"name": "New", "email": "new@example.com"}
 			if tc.orgName != "" {
 				payload["org_name"] = tc.orgName
 			}
@@ -142,8 +142,8 @@ func TestUserCreationOrgContext(t *testing.T) {
 }
 
 func TestOrgCtxMiddlewareFailures(t *testing.T) {
-	u := users.User{ID: "u1", APIKey: "secret"}
-	o := orgs.Organization{ID: "o1", Name: "Org"}
+	u := users.User{ID: "u1", Name: "User1", Email: "u1@example.com", APIKey: "secret"}
+	o := orgs.Organization{ID: "o1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
 
 	cases := []struct {
 		name  string

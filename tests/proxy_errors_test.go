@@ -20,7 +20,7 @@ func TestProxyMissingKey(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 
 	router := setupRouter()
@@ -43,7 +43,7 @@ func TestProxyInvalidKey(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 
 	router := setupRouter()
@@ -67,7 +67,7 @@ func TestProxyExpiredKey(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 
 	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
@@ -96,7 +96,7 @@ func TestProxyScopeViolation(t *testing.T) {
 	routes.KeyStore = keys.NewMemoryStore()
 	routes.RootKeyStore = rootkeys.NewMemoryStore()
 	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", APIKey: "secret"}
+	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
 	routes.UserStore.Create(u)
 
 	called := false
