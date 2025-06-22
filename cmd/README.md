@@ -8,6 +8,7 @@ Common commands include:
 - `service-add` and `service-delete` – manage upstream services
 - `rootkey-add`, `rootkey-update`, `rootkey-delete` – manage root keys
 - `user-add` – create an API user
+- `migrate` – apply SQL migrations in `migrations/`
 
 All commands talk to `http://localhost:3333` by default. Use `--addr` to
 override the API address.
