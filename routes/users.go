@@ -111,7 +111,6 @@ func buildAuthToken(userID, orgID string) (string, error) {
 // GetUserInfo handles GET /user and returns details about the authenticated user.
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
-	logging.Logger.Info().Msg("key used")
 
 	if !strings.HasPrefix(authHeader, "Bearer ") {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
