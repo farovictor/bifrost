@@ -76,3 +76,23 @@ func PostgresDSN() string {
 func AdminAPIKey() string {
 	return os.Getenv("BIFROST_ADMIN_API_KEY")
 }
+
+// AdminName returns the name to use for the initial admin user.
+// It reads BIFROST_ADMIN_NAME and defaults to "Admin" when unset.
+func AdminName() string {
+	name := os.Getenv("BIFROST_ADMIN_NAME")
+	if name == "" {
+		name = "Admin"
+	}
+	return name
+}
+
+// AdminEmail returns the email to use for the initial admin user.
+// It reads BIFROST_ADMIN_EMAIL and defaults to "admin@example.com" when unset.
+func AdminEmail() string {
+	email := os.Getenv("BIFROST_ADMIN_EMAIL")
+	if email == "" {
+		email = "admin@example.com"
+	}
+	return email
+}

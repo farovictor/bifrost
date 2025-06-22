@@ -51,7 +51,7 @@ var initAdminCmd = &cobra.Command{
 }
 
 func init() {
-	initAdminCmd.Flags().StringVar(&initAdminName, "name", "Admin", "admin user name")
-	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", "admin@example.com", "admin user email")
+	initAdminCmd.Flags().StringVar(&initAdminName, "name", config.AdminName(), "admin user name")
+	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", config.AdminEmail(), "admin user email")
 	rootCmd.AddCommand(initAdminCmd)
 }

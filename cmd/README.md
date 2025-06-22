@@ -14,7 +14,7 @@ commands are listed below:
 | `rootkey-delete` | delete a root key |
 | `user-add` | create an API user |
 | `migrate` | apply SQL migrations in `migrations/` |
-| `init-admin` | create an admin user in the database (uses `BIFROST_ADMIN_API_KEY` if set) |
+| `init-admin` | create an admin user in the database (uses `BIFROST_ADMIN_API_KEY`, `BIFROST_ADMIN_NAME`, and `BIFROST_ADMIN_EMAIL` if set) |
 
 All commands talk to `http://localhost:3333` by default. Use `--addr` to
 override the API address.
