@@ -81,6 +81,9 @@ Bifrost can be configured through the following environment variables:
 | `BIFROST_ADMIN_NAME` | name for the admin user | `Admin` |
 | `BIFROST_ADMIN_EMAIL` | email for the admin user | `admin@example.com` |
 | `BIFROST_ADMIN_ORG_NAME` | name of the admin organization | `Admin` |
+| `BIFROST_ADMIN_ORG_EMAIL` | contact email for the admin organization | `admin@example.com` |
+| `BIFROST_ADMIN_ORG_DOMAIN` | domain for the admin organization | `example.com` |
+| `BIFROST_ADMIN_ROLE` | membership role for the admin user | `owner` |
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 
