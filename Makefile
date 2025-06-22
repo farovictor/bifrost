@@ -16,7 +16,7 @@ run:
 
 # compose-up: start Docker Compose environment
 compose-up:
-	docker compose up -d
+	docker compose up -d --build
 
 # compose-down: stop Docker Compose environment
 compose-down:
