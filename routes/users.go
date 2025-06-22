@@ -9,6 +9,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
+	"github.com/farovictor/bifrost/pkg/utils"
 )
 
 // UserStore provides access to persisted users.
@@ -41,7 +42,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := users.User{ID: users.GenerateID(), Name: req.Name, Email: req.Email, APIKey: users.GenerateAPIKey()}
+	u := users.User{ID: utils.GenerateID(), Name: req.Name, Email: req.Email, APIKey: users.GenerateAPIKey()}
 	if err := UserStore.Create(u); err != nil {
 		switch err {
 		case users.ErrUserExists:
@@ -54,7 +55,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var orgID string
 	if req.OrgName != "" && req.OrgID == "" {
-		o := orgs.Organization{ID: orgs.GenerateID(), Name: req.OrgName}
+		o := orgs.Organization{ID: utils.GenerateID(), Name: req.OrgName}
 		if err := OrgStore.Create(o); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return

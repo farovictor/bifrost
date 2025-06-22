@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/farovictor/bifrost/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -43,7 +44,7 @@ func (s *MemoryStore) Create(o Organization) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if o.ID == "" {
-		o.ID = GenerateID()
+		o.ID = utils.GenerateID()
 	}
 	if _, ok := s.orgs[o.ID]; ok {
 		return ErrOrgExists
@@ -99,7 +100,7 @@ func (s *MemoryStore) List() []Organization {
 // Create inserts an organization into the database.
 func (s *PostgresStore) Create(o Organization) error {
 	if o.ID == "" {
-		o.ID = GenerateID()
+		o.ID = utils.GenerateID()
 	}
 	if err := s.db.Create(&o).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {

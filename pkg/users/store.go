@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/farovictor/bifrost/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -44,7 +45,7 @@ func (s *MemoryStore) Create(u User) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if u.ID == "" {
-		u.ID = GenerateID()
+		u.ID = utils.GenerateID()
 	}
 	if _, ok := s.users[u.ID]; ok {
 		return ErrUserExists
@@ -106,7 +107,7 @@ func (s *MemoryStore) Update(u User) error {
 // Create inserts a new user into the database.
 func (s *PostgresStore) Create(u User) error {
 	if u.ID == "" {
-		u.ID = GenerateID()
+		u.ID = utils.GenerateID()
 	}
 	if err := s.db.Create(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
