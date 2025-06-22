@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/farovictor/bifrost/pkg/utils"
 	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/database"
 	"github.com/farovictor/bifrost/pkg/orgs"
@@ -35,7 +36,7 @@ var initAdminCmd = &cobra.Command{
 		defer sqlDB.Close()
 
 		orgStore := orgs.NewPostgresStore(db)
-		orgID := orgs.GenerateID()
+		orgID := utils.GenerateID()
 		o := orgs.Organization{ID: orgID, Name: initAdminOrgName, Domain: initAdminOrgDomain, Email: initAdminOrgEmail}
 		if err := orgStore.Create(o); err != nil {
 			return err
@@ -46,7 +47,7 @@ var initAdminCmd = &cobra.Command{
 		if key == "" {
 			key = users.GenerateAPIKey()
 		}
-		userID := users.GenerateID()
+		userID := utils.GenerateID()
 		u := users.User{
 			ID:     userID,
 			Name:   initAdminName,
