@@ -34,7 +34,7 @@ func init() {
 // loadKey returns the signing key from the BIFROST_SIGNING_KEY environment
 // variable. If the variable is empty or invalid base64, a random key is
 // generated instead.
-func loadKey() []byte {
+func loadKey() ([]byte, error) {
 	v := os.Getenv("BIFROST_SIGNING_KEY")
 	if v == "" {
 		logging.Logger.Warn().Msg("BIFROST_SIGNING_KEY not set, generating random key")
@@ -47,7 +47,7 @@ func loadKey() []byte {
 		return generateKey()
 	}
 
-	return b
+	return b, nil
 }
 
 // generateKey creates a new random signing key.
