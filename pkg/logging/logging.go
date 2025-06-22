@@ -32,6 +32,6 @@ func Setup() {
 		w = zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 	}
 
-	Logger = zerolog.New(w).Level(level).With().Timestamp().Logger()
+	Logger = zerolog.New(w).Level(level).With().Timestamp().Caller().Logger()
 	log.Logger = Logger
 }
