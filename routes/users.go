@@ -135,8 +135,9 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type orgInfo struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
+		OrgID string `json:"org_id"`
+		Name  string `json:"name"`
+		Role  string `json:"role"`
 	}
 
 	var orgsInfo []orgInfo
@@ -145,7 +146,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if o, err := OrgStore.Get(m.OrgID); err == nil {
-			orgsInfo = append(orgsInfo, orgInfo{ID: o.ID, Name: o.Name})
+			orgsInfo = append(orgsInfo, orgInfo{OrgID: o.ID, Name: o.Name, Role: m.Role})
 		}
 	}
 
