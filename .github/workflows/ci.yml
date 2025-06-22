@@ -37,11 +37,47 @@ jobs:
       - name: Test
         run: go test ./...
 
-  docker-build:
+  # docker-build:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Build Docker image
+  #       run: docker build -t bifrost:local .
+
+  integration-check:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: bifrost
+          POSTGRES_PASSWORD: bifrost
+          POSTGRES_DB: bifrost
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U bifrost"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+          --health-start-period=5s
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t bifrost:local .
+        run: docker build -t bifrost:test .
+
+      - name: Run bifrost check
+        run: |
+          docker run --rm \
+            --network host \
+            -e REDIS_ADDR=localhost:${{ job.services.redis.ports['6379'] }} \
+            -e POSTGRES_DSN=postgres://bifrost:bifrost@localhost:${{ job.services.postgres.ports['5432'] }}/bifrost?sslmode=disable \
+            bifrost:test /app/bifrost-cli check
