@@ -79,4 +79,4 @@ jobs:
           docker compose run --rm --no-deps \
             -e REDIS_ADDR=localhost:${{ job.services.redis.ports['6379'] }} \
             -e POSTGRES_DSN=postgres://bifrost:bifrost@localhost:${{ job.services.postgres.ports['5432'] }}/bifrost?sslmode=disable \
-            bifrost bifrost check
+            /app/bifrost bifrost check
