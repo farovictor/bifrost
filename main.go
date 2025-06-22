@@ -22,8 +22,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func main() {
+func init() {
 	logging.Setup()
+}
+
+func main() {
 
 	dsn := config.PostgresDSN()
 	if dsn == "" {
@@ -33,6 +36,7 @@ func main() {
 		routes.ServiceStore = services.NewMemoryStore()
 		routes.OrgStore = orgs.NewMemoryStore()
 		routes.MembershipStore = orgs.NewMembershipStore()
+		logging.Logger.Info().Msg("In-Memory Store set")
 	} else {
 		db, err := database.Connect(dsn)
 		if err != nil {
@@ -45,6 +49,7 @@ func main() {
 		routes.ServiceStore = services.NewPostgresStore(db)
 		routes.OrgStore = orgs.NewPostgresStore(db)
 		routes.MembershipStore = orgs.NewMembershipStore()
+		logging.Logger.Info().Msg("Postgres Store set")
 	}
 
 	if config.MetricsEnabled() {
@@ -94,7 +99,11 @@ func main() {
 		r.Handle("/metrics", promhttp.Handler())
 	}
 
-	http.ListenAndServe(config.ServerPort(), r)
+	logging.Logger.Info().Msg("Initializing Server ...")
+
+	if err := http.ListenAndServe(config.ServerPort(), r); err != nil {
+		logging.Logger.Fatal().Err(err).Msg("listen and serve")
+	}
 }
 
 func apiVersionCtx(version string) func(next http.Handler) http.Handler {
