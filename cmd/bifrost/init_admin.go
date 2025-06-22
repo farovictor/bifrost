@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/farovictor/bifrost/pkg/utils"
 	"github.com/farovictor/bifrost/config"
+	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/database"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
+	"github.com/farovictor/bifrost/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -65,7 +67,17 @@ var initAdminCmd = &cobra.Command{
 		if err := memStore.Create(m); err != nil {
 			return err
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), u.APIKey)
+		tok, err := auth.Sign(auth.AuthToken{
+			UserID:    u.ID,
+			OrgID:     o.ID,
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		})
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), tok)
+		// fmt.Fprintln(cmd.OutOrStdout(), u.APIKey)
 		return nil
 	},
 }
