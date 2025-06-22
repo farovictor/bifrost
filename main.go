@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
+	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/metrics"
+	"github.com/farovictor/bifrost/pkg/orgs"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
@@ -18,6 +24,31 @@ import (
 
 func main() {
 	logging.Setup()
+
+	dsn := config.PostgresDSN()
+	if dsn == "" {
+		routes.UserStore = users.NewMemoryStore()
+		routes.KeyStore = keys.NewMemoryStore()
+		routes.RootKeyStore = rootkeys.NewMemoryStore()
+		routes.ServiceStore = services.NewMemoryStore()
+		routes.OrgStore = orgs.NewMemoryStore()
+		routes.MembershipStore = orgs.NewMembershipStore()
+	} else {
+		db, err := sql.Open("postgres", dsn)
+		if err != nil {
+			logging.Logger.Fatal().Err(err).Msg("connect postgres")
+		}
+		if err := db.Ping(); err != nil {
+			logging.Logger.Fatal().Err(err).Msg("ping postgres")
+		}
+
+		routes.UserStore = users.NewPostgresStore(db)
+		routes.KeyStore = keys.NewPostgresStore(db)
+		routes.RootKeyStore = rootkeys.NewPostgresStore(db)
+		routes.ServiceStore = services.NewPostgresStore(db)
+		routes.OrgStore = orgs.NewPostgresStore(db)
+		routes.MembershipStore = orgs.NewMembershipStore()
+	}
 
 	if config.MetricsEnabled() {
 		metrics.Register(prometheus.DefaultRegisterer)
