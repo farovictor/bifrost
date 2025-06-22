@@ -14,6 +14,10 @@ build:
 run:
 	go1.23.8 run main.go
 
+test:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+
 # compose-up: start Docker Compose environment
 compose-up:
 	docker compose up -d --build
