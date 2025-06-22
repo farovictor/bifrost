@@ -1,8 +1,6 @@
 package routes
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -42,7 +40,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := users.User{ID: req.ID, APIKey: generateKey()}
+	u := users.User{ID: req.ID, APIKey: users.GenerateAPIKey()}
 	if err := UserStore.Create(u); err != nil {
 		switch err {
 		case users.ErrUserExists:
@@ -55,7 +53,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var orgID string
 	if req.OrgName != "" && req.OrgID == "" {
-		o := orgs.Organization{ID: generateKey(), Name: req.OrgName}
+		o := orgs.Organization{ID: users.GenerateAPIKey(), Name: req.OrgName}
 		if err := OrgStore.Create(o); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
@@ -96,14 +94,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
-}
-
-func generateKey() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return ""
-	}
-	return hex.EncodeToString(b)
 }
 
 func buildAuthToken(userID, orgID string) (string, error) {
