@@ -46,7 +46,7 @@ jobs:
   #     - name: Build Docker image
   #       run: docker build -t bifrost:local .
 
-  init-check:
+  integration-check:
     runs-on: ubuntu-latest
     services:
       redis:
