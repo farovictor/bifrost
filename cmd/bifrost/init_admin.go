@@ -9,7 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var initAdminID string
+var (
+	initAdminID    string
+	initAdminName  string
+	initAdminEmail string
+)
 
 var initAdminCmd = &cobra.Command{
 	Use:   "init-admin",
@@ -31,7 +35,12 @@ var initAdminCmd = &cobra.Command{
 		if key == "" {
 			key = users.GenerateAPIKey()
 		}
-		u := users.User{ID: initAdminID, APIKey: key}
+		u := users.User{
+			ID:     initAdminID,
+			Name:   initAdminName,
+			Email:  initAdminEmail,
+			APIKey: key,
+		}
 		if err := store.Create(u); err != nil {
 			if err == users.ErrUserExists {
 				return fmt.Errorf("user already exists")
@@ -45,5 +54,7 @@ var initAdminCmd = &cobra.Command{
 
 func init() {
 	initAdminCmd.Flags().StringVar(&initAdminID, "id", config.AdminID(), "admin user id")
+	initAdminCmd.Flags().StringVar(&initAdminName, "name", "Admin", "admin user name")
+	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", "admin@example.com", "admin user email")
 	rootCmd.AddCommand(initAdminCmd)
 }
