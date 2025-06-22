@@ -13,7 +13,6 @@ import (
 var (
 	initAdminName    string
 	initAdminEmail   string
-	initAdminOrgID   string
 	initAdminOrgName string
 )
 
@@ -33,7 +32,7 @@ var initAdminCmd = &cobra.Command{
 		defer sqlDB.Close()
 
 		orgStore := orgs.NewPostgresStore(db)
-		o := orgs.Organization{ID: initAdminOrgID, Name: initAdminOrgName}
+		o := orgs.Organization{Name: initAdminOrgName}
 		if err := orgStore.Create(o); err != nil && err != orgs.ErrOrgExists {
 			return err
 		}
@@ -62,7 +61,6 @@ var initAdminCmd = &cobra.Command{
 func init() {
 	initAdminCmd.Flags().StringVar(&initAdminName, "name", config.AdminName(), "admin user name")
 	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", config.AdminEmail(), "admin user email")
-	initAdminCmd.Flags().StringVar(&initAdminOrgID, "org-id", config.AdminOrgID(), "admin organization id")
 	initAdminCmd.Flags().StringVar(&initAdminOrgName, "org-name", config.AdminOrgName(), "admin organization name")
 	rootCmd.AddCommand(initAdminCmd)
 }
