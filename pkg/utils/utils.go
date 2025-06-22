@@ -1,4 +1,5 @@
-package users
+// Package utils provides helper functions used across the project.
+package utils
 
 import "github.com/google/uuid"
 
