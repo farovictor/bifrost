@@ -11,9 +11,12 @@ import (
 )
 
 var (
-	initAdminName    string
-	initAdminEmail   string
-	initAdminOrgName string
+	initAdminName      string
+	initAdminEmail     string
+	initAdminOrgName   string
+	initAdminOrgEmail  string
+	initAdminOrgDomain string
+	initAdminRole      string
 )
 
 var initAdminCmd = &cobra.Command{
@@ -32,8 +35,9 @@ var initAdminCmd = &cobra.Command{
 		defer sqlDB.Close()
 
 		orgStore := orgs.NewPostgresStore(db)
-		o := orgs.Organization{Name: initAdminOrgName}
-		if err := orgStore.Create(o); err != nil && err != orgs.ErrOrgExists {
+		orgID := orgs.GenerateID()
+		o := orgs.Organization{ID: orgID, Name: initAdminOrgName, Domain: initAdminOrgDomain, Email: initAdminOrgEmail}
+		if err := orgStore.Create(o); err != nil {
 			return err
 		}
 
@@ -42,7 +46,9 @@ var initAdminCmd = &cobra.Command{
 		if key == "" {
 			key = users.GenerateAPIKey()
 		}
+		userID := users.GenerateID()
 		u := users.User{
+			ID:     userID,
 			Name:   initAdminName,
 			Email:  initAdminEmail,
 			APIKey: key,
@@ -51,6 +57,11 @@ var initAdminCmd = &cobra.Command{
 			if err == users.ErrUserExists {
 				return fmt.Errorf("user already exists")
 			}
+			return err
+		}
+		memStore := orgs.NewPostgresMembershipStore(db)
+		m := orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: initAdminRole}
+		if err := memStore.Create(m); err != nil {
 			return err
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), u.APIKey)
@@ -62,5 +73,8 @@ func init() {
 	initAdminCmd.Flags().StringVar(&initAdminName, "name", config.AdminName(), "admin user name")
 	initAdminCmd.Flags().StringVar(&initAdminEmail, "email", config.AdminEmail(), "admin user email")
 	initAdminCmd.Flags().StringVar(&initAdminOrgName, "org-name", config.AdminOrgName(), "admin organization name")
+	initAdminCmd.Flags().StringVar(&initAdminOrgEmail, "org-email", config.AdminOrgEmail(), "admin organization email")
+	initAdminCmd.Flags().StringVar(&initAdminOrgDomain, "org-domain", config.AdminOrgDomain(), "admin organization domain")
+	initAdminCmd.Flags().StringVar(&initAdminRole, "role", config.AdminRole(), "admin membership role")
 	rootCmd.AddCommand(initAdminCmd)
 }

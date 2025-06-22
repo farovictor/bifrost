@@ -14,5 +14,8 @@ environment variables. Key variables include:
 - `BIFROST_ADMIN_NAME` – name for the admin user, defaults to `Admin`
 - `BIFROST_ADMIN_EMAIL` – email for the admin user, defaults to `admin@example.com`
 - `BIFROST_ADMIN_ORG_NAME` – name for the admin organization (default `Admin`)
+- `BIFROST_ADMIN_ORG_EMAIL` – contact email for the admin organization (default `admin@example.com`)
+- `BIFROST_ADMIN_ORG_DOMAIN` – domain for the admin organization (default `example.com`)
+- `BIFROST_ADMIN_ROLE` – membership role for the admin user (default `owner`)
 
 See the project `README.md` for more details and examples.

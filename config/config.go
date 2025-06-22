@@ -106,3 +106,33 @@ func AdminOrgName() string {
 	}
 	return name
 }
+
+// AdminOrgDomain returns the domain for the initial admin organization.
+// It reads BIFROST_ADMIN_ORG_DOMAIN and defaults to "example.com" when unset.
+func AdminOrgDomain() string {
+	domain := os.Getenv("BIFROST_ADMIN_ORG_DOMAIN")
+	if domain == "" {
+		domain = "example.com"
+	}
+	return domain
+}
+
+// AdminOrgEmail returns the contact email for the initial admin organization.
+// It reads BIFROST_ADMIN_ORG_EMAIL and defaults to "admin@example.com" when unset.
+func AdminOrgEmail() string {
+	email := os.Getenv("BIFROST_ADMIN_ORG_EMAIL")
+	if email == "" {
+		email = "admin@example.com"
+	}
+	return email
+}
+
+// AdminRole returns the membership role for the admin user.
+// It reads BIFROST_ADMIN_ROLE and defaults to "owner" when unset.
+func AdminRole() string {
+	role := os.Getenv("BIFROST_ADMIN_ROLE")
+	if role == "" {
+		role = "owner"
+	}
+	return role
+}
