@@ -1,4 +1,5 @@
 **/bifrost*
+!cmd/bifrost
 **.*log
 **/*.out
 .envrc
