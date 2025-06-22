@@ -8,11 +8,11 @@ setup:
 
 # build: Compile all Go packages using Go 1.23.8
 build:
-	go1.23.8 build ./...
+	go build ./...
 
 # run: Execute the main application using Go 1.23.8
 run:
-	go1.23.8 run main.go
+	go run main.go
 
 test:
 	go test ./... -coverprofile=coverage.out
