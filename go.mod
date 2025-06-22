@@ -8,7 +8,7 @@ require (
         github.com/redis/go-redis/v9 v9.9.0
         github.com/rs/zerolog v1.30.0
         github.com/spf13/cobra v1.9.1
-        github.com/lib/pq v1.10.9
+        github.com/lib/pq v0.0.0
 )
 
 replace github.com/lib/pq => ./pkg/pq
