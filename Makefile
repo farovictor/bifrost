@@ -20,5 +20,9 @@ compose-up:
 
 # compose-down: stop Docker Compose environment
 compose-down:
-	docker compose down
+	docker compose down --remove-orphans --volumes
+
+# compose-attach: Attach to web-server
+compose-attach:
+	docker exec -it bifrost-bifrost-1 sh
 
