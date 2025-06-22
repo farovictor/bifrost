@@ -22,8 +22,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func main() {
+func init() {
 	logging.Setup()
+}
+
+func main() {
 
 	dsn := config.PostgresDSN()
 	if dsn == "" {
@@ -33,6 +36,7 @@ func main() {
 		routes.ServiceStore = services.NewMemoryStore()
 		routes.OrgStore = orgs.NewMemoryStore()
 		routes.MembershipStore = orgs.NewMembershipStore()
+		logging.Logger.Info().Msg("In-Memory Store set")
 	} else {
 		db, err := database.Connect(dsn)
 		if err != nil {
@@ -45,6 +49,7 @@ func main() {
 		routes.ServiceStore = services.NewPostgresStore(db)
 		routes.OrgStore = orgs.NewPostgresStore(db)
 		routes.MembershipStore = orgs.NewMembershipStore()
+		logging.Logger.Info().Msg("Postgres Store set")
 	}
 
 	if config.MetricsEnabled() {
@@ -62,33 +67,43 @@ func main() {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
-		r.Use(rl.AuthMiddleware())
-		r.Use(rl.OrgCtxMiddleware())
-		r.Get("/hello", v1.SayHello)
 
-		r.Post("/users", routes.CreateUser)
-		r.Get("/user", routes.GetUserInfo)
+		// Endpoints that only require the auth token
+		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
+		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
 
-		r.Post("/keys", routes.CreateKey)
-		r.Delete("/keys/{id}", routes.DeleteKey)
+		// Endpoints requiring API key and auth token
+		r.Group(func(r chi.Router) {
+			r.Use(rl.AuthMiddleware())
+			r.Use(rl.OrgCtxMiddleware())
 
-		r.Post("/rootkeys", routes.CreateRootKey)
-		r.Put("/rootkeys/{id}", routes.UpdateRootKey)
-		r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
+			r.Get("/hello", v1.SayHello)
 
-		r.Post("/services", routes.CreateService)
-		r.Delete("/services/{id}", routes.DeleteService)
+			r.Post("/keys", routes.CreateKey)
+			r.Delete("/keys/{id}", routes.DeleteKey)
 
-		r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+			r.Post("/rootkeys", routes.CreateRootKey)
+			r.Put("/rootkeys/{id}", routes.UpdateRootKey)
+			r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
 
-		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+			r.Post("/services", routes.CreateService)
+			r.Delete("/services/{id}", routes.DeleteService)
+
+			r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+
+			r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+		})
 	})
 
 	if config.MetricsEnabled() {
 		r.Handle("/metrics", promhttp.Handler())
 	}
 
-	http.ListenAndServe(config.ServerPort(), r)
+	logging.Logger.Info().Msg("Initializing Server ...")
+
+	if err := http.ListenAndServe(config.ServerPort(), r); err != nil {
+		logging.Logger.Fatal().Err(err).Msg("listen and serve")
+	}
 }
 
 func apiVersionCtx(version string) func(next http.Handler) http.Handler {

@@ -1,5 +1,10 @@
 # Makefile for Bifrost
 
+export BIFROST_SIGNING_KEY
+export BIFROST_PORT
+export REDIS_ADDR
+export POSTGRES_DSN
+
 # setup: Install Go 1.23.8 and project dependencies
 setup:
 	go install golang.org/dl/go1.23.8@latest
@@ -8,11 +13,11 @@ setup:
 
 # build: Compile all Go packages using Go 1.23.8
 build:
-	go build ./...
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o bifrost-server main.go
 
 # run: Execute the main application using Go 1.23.8
 run:
-	go run main.go
+	BIFROST_LOG_FORMAT=console go run .
 
 test:
 	go test ./... -coverprofile=coverage.out

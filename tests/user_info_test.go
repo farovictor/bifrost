@@ -25,7 +25,6 @@ func TestGetUserInfo(t *testing.T) {
 
 	router := setupRouter()
 	req := httptest.NewRequest(http.MethodGet, "/v1/user", nil)
-	req.Header.Set("X-API-Key", u.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)

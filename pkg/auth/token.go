@@ -7,8 +7,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/farovictor/bifrost/pkg/logging"
 )
 
 // AuthToken represents an authentication token for API users.
@@ -18,15 +21,42 @@ type AuthToken struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 
-var signingKey = generateKey()
+var signingKey []byte
+
+func init() {
+	var err error
+	signingKey, err = loadKey()
+	if err != nil {
+		logging.Logger.Fatal().Err(err).Msg("load signing key")
+	}
+}
+
+// loadKey returns the signing key from the BIFROST_SIGNING_KEY environment
+// variable. If the variable is empty or invalid base64, a random key is
+// generated instead.
+func loadKey() ([]byte, error) {
+	v := os.Getenv("BIFROST_SIGNING_KEY")
+	if v == "" {
+		logging.Logger.Warn().Msg("BIFROST_SIGNING_KEY not set, generating random key")
+		return generateKey()
+	}
+
+	b, err := base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		logging.Logger.Warn().Err(err).Msg("invalid BIFROST_SIGNING_KEY, generating random key")
+		return generateKey()
+	}
+
+	return b, nil
+}
 
 // generateKey creates a new random signing key.
-func generateKey() []byte {
+func generateKey() ([]byte, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		return nil
+		return nil, err
 	}
-	return b
+	return b, nil
 }
 
 // Sign encodes and signs the token using HMAC-SHA256.

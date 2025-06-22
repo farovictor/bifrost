@@ -2,14 +2,15 @@ package routes
 
 import (
 	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
 	"github.com/farovictor/bifrost/pkg/utils"
-	"net/http"
-	"strings"
-	"time"
 )
 
 // UserStore provides access to persisted users.
@@ -110,6 +111,7 @@ func buildAuthToken(userID, orgID string) (string, error) {
 // GetUserInfo handles GET /user and returns details about the authenticated user.
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
+
 	if !strings.HasPrefix(authHeader, "Bearer ") {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -117,6 +119,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	raw := strings.TrimPrefix(authHeader, "Bearer ")
 	tok, err := auth.Verify(raw)
 	if err != nil {
+		logging.Logger.Error().Err(err).Msg("token verification failed")
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
