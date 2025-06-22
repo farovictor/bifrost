@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/farovictor/bifrost/pkg/utils"
 	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/database"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
+	"github.com/farovictor/bifrost/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
