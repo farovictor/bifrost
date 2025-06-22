@@ -132,6 +132,31 @@ When `BIFROST_ENABLE_METRICS` is set, Bifrost exposes Prometheus metrics at
 ## Golang First
 Fast, type-safe, and built for performance and extensibility.
 
+## Service Layer Diagram
+
+```mermaid
+flowchart TD
+    Client --> Router
+    Router --> LoggingMiddleware --> MetricsMiddleware --> AuthMiddleware --> OrgCtxMiddleware
+
+    Router --> |"/v1/users"| UserStore
+    Router --> |"/v1/keys"| KeyStore
+    Router --> |"/v1/rootkeys"| RootKeyStore
+    Router --> |"/v1/services"| ServiceStore
+
+    Router --> |"/v1/proxy"| RateLimitMiddleware --> Proxy
+    RateLimitMiddleware --> Redis
+    Proxy --> KeyStore
+    Proxy --> ServiceStore
+    Proxy --> RootKeyStore
+    Proxy --> UpstreamService
+
+    OrgCtxMiddleware --> MembershipStore
+    OrgCtxMiddleware --> OrgStore
+    AuthMiddleware --> UserStore
+    MetricsMiddleware --> Prometheus
+```
+
 ## CLI Usage
 You can manage virtual keys from the command line with the `bifrost` tool.
 The commands interact with the running HTTP API by default. Before issuing
