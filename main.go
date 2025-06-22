@@ -6,6 +6,7 @@ import (
 
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
+	"github.com/farovictor/bifrost/pkg/database"
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/metrics"
@@ -19,8 +20,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -35,16 +34,9 @@ func main() {
 		routes.OrgStore = orgs.NewMemoryStore()
 		routes.MembershipStore = orgs.NewMembershipStore()
 	} else {
-		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		db, err := database.Connect(dsn)
 		if err != nil {
 			logging.Logger.Fatal().Err(err).Msg("connect postgres")
-		}
-		sqlDB, err := db.DB()
-		if err != nil {
-			logging.Logger.Fatal().Err(err).Msg("db access")
-		}
-		if err := sqlDB.Ping(); err != nil {
-			logging.Logger.Fatal().Err(err).Msg("ping postgres")
 		}
 
 		routes.UserStore = users.NewPostgresStore(db)
