@@ -120,7 +120,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	raw := strings.TrimPrefix(authHeader, "Bearer ")
 	tok, err := auth.Verify(raw)
 	if err != nil {
-		logging.Logger.Error().Err(err).Msg("verify token")
+		logging.Logger.Error().Err(err).Msg("token verification failed")
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
