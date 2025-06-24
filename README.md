@@ -317,6 +317,18 @@ curl -X POST http://localhost:3333/v1/services \
 ### Delete a service
 DELETE `/v1/services/<id>` to remove a service. Include your API key header.
 
+### Add a root key
+POST `/v1/user/rootkeys` with JSON describing the key. Requires only the bearer token.
+
+Example:
+
+```bash
+curl -X POST http://localhost:3333/v1/user/rootkeys \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <token>' \
+  -d '{"id":"demo-root","api_key":"SECRET"}'
+```
+
 ### Create a user
 POST `/v1/users` with a JSON body containing the user ID. Optional `org_id` and
 `org_name` fields associate the user with an organization. Provide a `role`

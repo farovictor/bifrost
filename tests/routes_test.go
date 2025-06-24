@@ -21,6 +21,7 @@ func setupRouter() http.Handler {
 	r.Route("/v1", func(r chi.Router) {
 		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
 		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
+		r.With(rl.OrgCtxMiddleware()).Post("/user/rootkeys", routes.CreateRootKey)
 
 		r.Group(func(r chi.Router) {
 			r.Use(rl.AuthMiddleware())
