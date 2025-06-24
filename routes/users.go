@@ -127,8 +127,10 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	u, err := UserStore.Get(tok.UserID)
 	if err != nil {
 		if err == users.ErrUserNotFound {
+			logging.Logger.Warn().Str("user_id", tok.UserID).Msg("user not found")
 			http.Error(w, "not found", http.StatusNotFound)
 		} else {
+			logging.Logger.Error().Err(err).Str("user_id", tok.UserID).Msg("get user")
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}
 		return
