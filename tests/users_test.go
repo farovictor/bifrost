@@ -62,3 +62,36 @@ func TestCreateUserReturnsToken(t *testing.T) {
 		t.Fatalf("unexpected expiry")
 	}
 }
+func TestCreateUserDuplicateSameOrg(t *testing.T) {
+	routes.UserStore = users.NewMemoryStore()
+	routes.OrgStore = orgs.NewMemoryStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
+
+	admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "secret"}
+	routes.UserStore.Create(admin)
+
+	org := orgs.Organization{ID: "org1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
+	routes.OrgStore.Create(org)
+
+	router := setupRouter()
+
+	payload := `{"name":"User","email":"dup@example.com","org_id":"org1"}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))
+	req.Header.Set("Authorization", "Bearer "+makeToken(admin.ID))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("first create status %d", rr.Code)
+	}
+
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))
+	req2.Header.Set("Authorization", "Bearer "+makeToken(admin.ID))
+	rr2 := httptest.NewRecorder()
+	router.ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusConflict {
+		t.Fatalf("expected status 409, got %d", rr2.Code)
+	}
+	if body := strings.TrimSpace(rr2.Body.String()); body != "user already exists" {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}

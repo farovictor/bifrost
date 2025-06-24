@@ -43,14 +43,23 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := users.User{ID: utils.GenerateID(), Name: req.Name, Email: req.Email, APIKey: users.GenerateAPIKey()}
-	if err := UserStore.Create(u); err != nil {
-		switch err {
-		case users.ErrUserExists:
-			http.Error(w, "user already exists", http.StatusConflict)
-		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+	existing, err := UserStore.GetByEmail(req.Email)
+	var u users.User
+	if err == nil {
+		u = existing
+	} else if err == users.ErrUserNotFound {
+		u = users.User{ID: utils.GenerateID(), Name: req.Name, Email: req.Email, APIKey: users.GenerateAPIKey()}
+		if err := UserStore.Create(u); err != nil {
+			switch err {
+			case users.ErrUserExists:
+				http.Error(w, "user already exists", http.StatusConflict)
+			default:
+				http.Error(w, "internal error", http.StatusInternalServerError)
+			}
+			return
 		}
+	} else {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -75,6 +84,18 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if orgID != "" {
+		existingMems := MembershipStore.ListByUser(u.ID)
+		if len(existingMems) > 0 {
+			for _, mem := range existingMems {
+				if mem.OrgID == orgID {
+					http.Error(w, "user already exists", http.StatusConflict)
+					return
+				}
+			}
+			http.Error(w, "user already exists", http.StatusConflict)
+			return
+		}
+
 		m := orgs.Membership{UserID: u.ID, OrgID: orgID, Role: role}
 		if err := MembershipStore.Create(m); err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
