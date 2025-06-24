@@ -56,7 +56,7 @@ func TestDeleteOrg(t *testing.T) {
 }
 
 func TestCreateGetMembership(t *testing.T) {
-	routes.MembershipStore = orgs.NewMembershipStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 	m := orgs.Membership{UserID: "u1", OrgID: "o1", Role: orgs.RoleMember}
 	if err := routes.MembershipStore.Create(m); err != nil {
 		t.Fatalf("create: %v", err)
@@ -71,7 +71,7 @@ func TestCreateGetMembership(t *testing.T) {
 }
 
 func TestUpdateMembership(t *testing.T) {
-	routes.MembershipStore = orgs.NewMembershipStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 	m := orgs.Membership{UserID: "u1", OrgID: "o1", Role: orgs.RoleMember}
 	if err := routes.MembershipStore.Create(m); err != nil {
 		t.Fatalf("seed: %v", err)
@@ -90,7 +90,7 @@ func TestUpdateMembership(t *testing.T) {
 }
 
 func TestDeleteMembership(t *testing.T) {
-	routes.MembershipStore = orgs.NewMembershipStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 	m := orgs.Membership{UserID: "u1", OrgID: "o1", Role: orgs.RoleMember}
 	if err := routes.MembershipStore.Create(m); err != nil {
 		t.Fatalf("seed: %v", err)

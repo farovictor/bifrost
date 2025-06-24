@@ -14,7 +14,7 @@ import (
 func TestGetUserInfo(t *testing.T) {
 	routes.UserStore = users.NewMemoryStore()
 	routes.OrgStore = orgs.NewMemoryStore()
-	routes.MembershipStore = orgs.NewMembershipStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 
 	u := users.User{ID: "u1", Name: "User", Email: "u@example.com", APIKey: "key"}
 	routes.UserStore.Create(u)
@@ -37,7 +37,11 @@ func TestGetUserInfo(t *testing.T) {
 		ID    string
 		Name  string
 		Email string
-		Orgs  []struct{ ID, Name string }
+		Orgs  []struct {
+			OrgID string `json:"org_id"`
+			Name  string `json:"name"`
+			Role  string `json:"role"`
+		}
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode: %v", err)
@@ -45,7 +49,8 @@ func TestGetUserInfo(t *testing.T) {
 	if resp.ID != u.ID || resp.Name != u.Name || resp.Email != u.Email {
 		t.Fatalf("unexpected user info: %#v", resp)
 	}
-	if len(resp.Orgs) != 1 || resp.Orgs[0].ID != o.ID || resp.Orgs[0].Name != o.Name {
+	if len(resp.Orgs) != 1 || resp.Orgs[0].OrgID != o.ID ||
+		resp.Orgs[0].Name != o.Name || resp.Orgs[0].Role != orgs.RoleOwner {
 		t.Fatalf("unexpected orgs: %#v", resp.Orgs)
 	}
 }
