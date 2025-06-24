@@ -141,10 +141,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var orgsInfo []orgInfo
-	for _, m := range MembershipStore.List() {
-		if m.UserID != u.ID {
-			continue
-		}
+	for _, m := range MembershipStore.ListByUser(u.ID) {
 		if o, err := OrgStore.Get(m.OrgID); err == nil {
 			orgsInfo = append(orgsInfo, orgInfo{OrgID: o.ID, Name: o.Name, Role: m.Role})
 		}
