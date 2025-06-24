@@ -94,3 +94,40 @@ func TestUpdateRootKey(t *testing.T) {
 		t.Fatalf("update did not persist")
 	}
 }
+
+func TestCreateRootKeyWithBearer(t *testing.T) {
+	routes.RootKeyStore = rootkeys.NewMemoryStore()
+	routes.UserStore = users.NewMemoryStore()
+	u := users.User{ID: "u2", Name: "U", Email: "u2@example.com", APIKey: "key"}
+	routes.UserStore.Create(u)
+	router := setupRouter()
+
+	rk := rootkeys.RootKey{ID: "rk2", APIKey: "secret"}
+	body, _ := json.Marshal(rk)
+	req := httptest.NewRequest(http.MethodPost, "/v1/user/rootkeys", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d", rr.Code)
+	}
+
+	if _, err := routes.RootKeyStore.Get(rk.ID); err != nil {
+		t.Fatalf("root key not stored: %v", err)
+	}
+}
+
+func TestCreateRootKeyWithBearerUnauthorized(t *testing.T) {
+	routes.RootKeyStore = rootkeys.NewMemoryStore()
+	router := setupRouter()
+	rk := rootkeys.RootKey{ID: "rk3", APIKey: "secret"}
+	body, _ := json.Marshal(rk)
+	req := httptest.NewRequest(http.MethodPost, "/v1/user/rootkeys", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", rr.Code)
+	}
+}

@@ -71,6 +71,7 @@ func main() {
 		// Endpoints that only require the auth token
 		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
 		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
+		r.With(rl.OrgCtxMiddleware()).Post("/user/rootkeys", routes.CreateRootKey)
 
 		// Endpoints requiring API key and auth token
 		r.Group(func(r chi.Router) {
