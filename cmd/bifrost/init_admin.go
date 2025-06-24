@@ -38,10 +38,15 @@ var initAdminCmd = &cobra.Command{
 		defer sqlDB.Close()
 
 		orgStore := orgs.NewPostgresStore(db)
-		orgID := utils.GenerateID()
-		o := orgs.Organization{ID: orgID, Name: initAdminOrgName, Domain: initAdminOrgDomain, Email: initAdminOrgEmail}
-		if err := orgStore.Create(o); err != nil {
-			return err
+		o, err := orgStore.GetByName(initAdminOrgName)
+		if err != nil {
+			if err != orgs.ErrOrgNotFound {
+				return err
+			}
+			o = orgs.Organization{ID: utils.GenerateID(), Name: initAdminOrgName, Domain: initAdminOrgDomain, Email: initAdminOrgEmail}
+			if err := orgStore.Create(o); err != nil {
+				return err
+			}
 		}
 
 		store := users.NewPostgresStore(db)
@@ -49,23 +54,38 @@ var initAdminCmd = &cobra.Command{
 		if key == "" {
 			key = users.GenerateAPIKey()
 		}
-		userID := utils.GenerateID()
-		u := users.User{
-			ID:     userID,
-			Name:   initAdminName,
-			Email:  initAdminEmail,
-			APIKey: key,
-		}
-		if err := store.Create(u); err != nil {
-			if err == users.ErrUserExists {
-				return fmt.Errorf("user already exists")
+		u, err := store.GetByEmail(initAdminEmail)
+		userExists := true
+		if err != nil {
+			if err != users.ErrUserNotFound {
+				return err
 			}
-			return err
+			userExists = false
+			u = users.User{
+				ID:     utils.GenerateID(),
+				Name:   initAdminName,
+				Email:  initAdminEmail,
+				APIKey: key,
+			}
+			if err := store.Create(u); err != nil {
+				return err
+			}
 		}
 		memStore := orgs.NewPostgresMembershipStore(db)
-		m := orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: initAdminRole}
-		if err := memStore.Create(m); err != nil {
-			return err
+		_, err = memStore.Get(u.ID, o.ID)
+		membershipExists := true
+		if err != nil {
+			if err != orgs.ErrMembershipNotFound {
+				return err
+			}
+			membershipExists = false
+			m := orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: initAdminRole}
+			if err := memStore.Create(m); err != nil {
+				return err
+			}
+		}
+		if userExists && membershipExists {
+			fmt.Fprintln(cmd.ErrOrStderr(), "warning: user and membership already exist")
 		}
 		tok, err := auth.Sign(auth.AuthToken{
 			UserID:    u.ID,
