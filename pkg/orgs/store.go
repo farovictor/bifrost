@@ -19,13 +19,14 @@ type Store interface {
 
 // MemoryStore keeps Organizations in memory with concurrency safety.
 type MemoryStore struct {
-	mu   sync.RWMutex
-	orgs map[string]Organization
+	mu    sync.RWMutex
+	orgs  map[string]Organization
+	names map[string]string
 }
 
 // NewMemoryStore creates an initialized MemoryStore.
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{orgs: make(map[string]Organization)}
+	return &MemoryStore{orgs: make(map[string]Organization), names: make(map[string]string)}
 }
 
 // NewPostgresStore creates a Postgres-backed store.
@@ -46,10 +47,14 @@ func (s *MemoryStore) Create(o Organization) error {
 	if o.ID == "" {
 		o.ID = utils.GenerateID()
 	}
+	if _, ok := s.names[o.Name]; ok {
+		return ErrOrgExists
+	}
 	if _, ok := s.orgs[o.ID]; ok {
 		return ErrOrgExists
 	}
 	s.orgs[o.ID] = o
+	s.names[o.Name] = o.ID
 	return nil
 }
 
@@ -68,10 +73,12 @@ func (s *MemoryStore) Get(id string) (Organization, error) {
 func (s *MemoryStore) Delete(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.orgs[id]; !ok {
+	o, ok := s.orgs[id]
+	if !ok {
 		return ErrOrgNotFound
 	}
 	delete(s.orgs, id)
+	delete(s.names, o.Name)
 	return nil
 }
 
@@ -79,8 +86,16 @@ func (s *MemoryStore) Delete(id string) error {
 func (s *MemoryStore) Update(o Organization) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.orgs[o.ID]; !ok {
+	curr, ok := s.orgs[o.ID]
+	if !ok {
 		return ErrOrgNotFound
+	}
+	if curr.Name != o.Name {
+		if _, exists := s.names[o.Name]; exists {
+			return ErrOrgExists
+		}
+		delete(s.names, curr.Name)
+		s.names[o.Name] = o.ID
 	}
 	s.orgs[o.ID] = o
 	return nil
