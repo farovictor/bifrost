@@ -225,6 +225,11 @@ go run ./cmd/bifrost rootkey-delete root
 go run ./cmd/bifrost user-add --id admin --org-name demo-org --role owner
 ```
 
+Makefile shortcuts:
+```bash
+make rootkey-add
+make service-add
+```
 Use `--addr` to specify a custom API address if the server is not running on
 `http://localhost:3333`.
 

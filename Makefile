@@ -4,6 +4,7 @@ export BIFROST_SIGNING_KEY
 export BIFROST_PORT
 export REDIS_ADDR
 export POSTGRES_DSN
+API_ADDR ?= http://localhost:3333
 
 # setup: Install Go 1.23.8 and project dependencies
 setup:
@@ -22,6 +23,14 @@ run:
 test:
 	go test ./... -coverprofile=coverage.out
 	go tool cover -func=coverage.out
+
+# rootkey-add: Register a root key for local testing
+rootkey-add:
+	go run ./cmd/bifrost rootkey-add --addr $(API_ADDR) --id root --apikey SECRET
+
+# service-add: Register a service for local testing
+service-add: rootkey-add
+	go run ./cmd/bifrost service-add --addr $(API_ADDR) --id svc --endpoint http://localhost:8081 --rootkey root
 
 # compose-up: start Docker Compose environment
 compose-up:
