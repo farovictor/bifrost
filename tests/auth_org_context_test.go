@@ -58,7 +58,7 @@ func TestUserCreationOrgContext(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			routes.UserStore = users.NewMemoryStore()
 			routes.OrgStore = orgs.NewMemoryStore()
-			routes.MembershipStore = orgs.NewMembershipStore()
+			routes.MembershipStore = orgs.NewMemoryMembershipStore()
 
 			admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "admink"}
 			routes.UserStore.Create(admin)
@@ -176,7 +176,7 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			routes.UserStore = users.NewMemoryStore()
 			routes.OrgStore = orgs.NewMemoryStore()
-			routes.MembershipStore = orgs.NewMembershipStore()
+			routes.MembershipStore = orgs.NewMemoryMembershipStore()
 			routes.UserStore.Create(u)
 			routes.OrgStore.Create(o)
 

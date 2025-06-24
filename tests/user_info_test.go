@@ -14,7 +14,7 @@ import (
 func TestGetUserInfo(t *testing.T) {
 	routes.UserStore = users.NewMemoryStore()
 	routes.OrgStore = orgs.NewMemoryStore()
-	routes.MembershipStore = orgs.NewMembershipStore()
+	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 
 	u := users.User{ID: "u1", Name: "User", Email: "u@example.com", APIKey: "key"}
 	routes.UserStore.Create(u)

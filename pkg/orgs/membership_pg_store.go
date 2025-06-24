@@ -7,7 +7,7 @@ import (
 )
 
 // PostgresMembershipStore persists memberships in PostgreSQL.
-// It mirrors the in-memory MembershipStore behavior.
+// It mirrors the in-memory MemoryMembershipStore behavior.
 type PostgresMembershipStore struct {
 	db *gorm.DB
 }
@@ -69,6 +69,15 @@ func (s *PostgresMembershipStore) Update(m Membership) error {
 func (s *PostgresMembershipStore) List() []Membership {
 	var out []Membership
 	if err := s.db.Find(&out).Error; err != nil {
+		return nil
+	}
+	return out
+}
+
+// ListByUser returns memberships for a specific user.
+func (s *PostgresMembershipStore) ListByUser(userID string) []Membership {
+	var out []Membership
+	if err := s.db.Where("user_id = ?", userID).Find(&out).Error; err != nil {
 		return nil
 	}
 	return out

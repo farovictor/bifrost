@@ -35,7 +35,7 @@ func main() {
 		routes.RootKeyStore = rootkeys.NewMemoryStore()
 		routes.ServiceStore = services.NewMemoryStore()
 		routes.OrgStore = orgs.NewMemoryStore()
-		routes.MembershipStore = orgs.NewMembershipStore()
+		routes.MembershipStore = orgs.NewMemoryMembershipStore()
 		logging.Logger.Info().Msg("In-Memory Store set")
 	} else {
 		db, err := database.Connect(dsn)
@@ -48,7 +48,7 @@ func main() {
 		routes.RootKeyStore = rootkeys.NewPostgresStore(db)
 		routes.ServiceStore = services.NewPostgresStore(db)
 		routes.OrgStore = orgs.NewPostgresStore(db)
-		routes.MembershipStore = orgs.NewMembershipStore()
+		routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
 		logging.Logger.Info().Msg("Postgres Store set")
 	}
 

@@ -127,8 +127,10 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	u, err := UserStore.Get(tok.UserID)
 	if err != nil {
 		if err == users.ErrUserNotFound {
+			logging.Logger.Warn().Str("user_id", tok.UserID).Msg("user not found")
 			http.Error(w, "not found", http.StatusNotFound)
 		} else {
+			logging.Logger.Error().Err(err).Str("user_id", tok.UserID).Msg("get user")
 			http.Error(w, "internal error", http.StatusInternalServerError)
 		}
 		return
@@ -141,10 +143,7 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var orgsInfo []orgInfo
-	for _, m := range MembershipStore.List() {
-		if m.UserID != u.ID {
-			continue
-		}
+	for _, m := range MembershipStore.ListByUser(u.ID) {
 		if o, err := OrgStore.Get(m.OrgID); err == nil {
 			orgsInfo = append(orgsInfo, orgInfo{OrgID: o.ID, Name: o.Name, Role: m.Role})
 		}
