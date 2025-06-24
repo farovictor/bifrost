@@ -13,20 +13,22 @@ type Store interface {
 	Create(User) error
 	Get(id string) (User, error)
 	GetByAPIKey(key string) (User, error)
+	GetByEmail(email string) (User, error)
 	Delete(id string) error
 	Update(User) error
 }
 
 // MemoryStore holds users in memory with concurrency safety.
 type MemoryStore struct {
-	mu    sync.RWMutex
-	users map[string]User
-	byKey map[string]User
+	mu      sync.RWMutex
+	users   map[string]User
+	byKey   map[string]User
+	byEmail map[string]User
 }
 
 // NewMemoryStore creates an initialized MemoryStore.
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{users: make(map[string]User), byKey: make(map[string]User)}
+	return &MemoryStore{users: make(map[string]User), byKey: make(map[string]User), byEmail: make(map[string]User)}
 }
 
 // NewPostgresStore creates a Postgres-backed store.
@@ -50,8 +52,12 @@ func (s *MemoryStore) Create(u User) error {
 	if _, ok := s.users[u.ID]; ok {
 		return ErrUserExists
 	}
+	if _, ok := s.byEmail[u.Email]; ok {
+		return ErrUserExists
+	}
 	s.users[u.ID] = u
 	s.byKey[u.APIKey] = u
+	s.byEmail[u.Email] = u
 	return nil
 }
 
@@ -77,6 +83,17 @@ func (s *MemoryStore) GetByAPIKey(key string) (User, error) {
 	return u, nil
 }
 
+// GetByEmail retrieves a User by its email.
+func (s *MemoryStore) GetByEmail(email string) (User, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	u, ok := s.byEmail[email]
+	if !ok {
+		return User{}, ErrUserNotFound
+	}
+	return u, nil
+}
+
 // Delete removes a User.
 func (s *MemoryStore) Delete(id string) error {
 	s.mu.Lock()
@@ -87,6 +104,7 @@ func (s *MemoryStore) Delete(id string) error {
 	}
 	delete(s.users, id)
 	delete(s.byKey, u.APIKey)
+	delete(s.byEmail, u.Email)
 	return nil
 }
 
@@ -99,8 +117,10 @@ func (s *MemoryStore) Update(u User) error {
 	}
 	old := s.users[u.ID]
 	delete(s.byKey, old.APIKey)
+	delete(s.byEmail, old.Email)
 	s.users[u.ID] = u
 	s.byKey[u.APIKey] = u
+	s.byEmail[u.Email] = u
 	return nil
 }
 
@@ -134,6 +154,18 @@ func (s *PostgresStore) Get(id string) (User, error) {
 func (s *PostgresStore) GetByAPIKey(key string) (User, error) {
 	var u User
 	if err := s.db.First(&u, "api_key = ?", key).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return User{}, ErrUserNotFound
+		}
+		return User{}, err
+	}
+	return u, nil
+}
+
+// GetByEmail retrieves a user by email.
+func (s *PostgresStore) GetByEmail(email string) (User, error) {
+	var u User
+	if err := s.db.First(&u, "email = ?", email).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return User{}, ErrUserNotFound
 		}

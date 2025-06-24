@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL,
     api_key TEXT NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email);
