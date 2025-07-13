@@ -8,6 +8,7 @@ services:
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      BIFROST_ADMIN_API_KEY: "testadmin"
     depends_on:
       redis:
         condition: service_started
@@ -27,6 +28,7 @@ services:
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      BIFROST_ADMIN_API_KEY: "testadmin"
     entrypoint: ["/app/bifrost-cli"]
     networks:
       - internal
@@ -38,6 +40,7 @@ services:
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
       POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      BIFROST_ADMIN_API_KEY: "testadmin"
     entrypoint: ["/app/bifrost-cli"]
     command: ["init-admin", "--name", "admin", "--org-name", "demo-org", "--email", "admin@admin.com"]
     depends_on:
@@ -76,6 +79,15 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-postgres.sh:/docker-entrypoint-initdb.d/init-postgres.sh:ro
       - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
+    networks:
+      - internal
+
+  testserver:
+    build: ./testserver
+    ports:
+      - "8081:8081"
+    environment:
+      TESTSERVER_PORT: "8081"
     networks:
       - internal
 
