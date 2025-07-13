@@ -12,6 +12,7 @@ import (
 type Store interface {
 	Create(Organization) error
 	Get(id string) (Organization, error)
+	GetByName(name string) (Organization, error)
 	Delete(id string) error
 	Update(Organization) error
 	List() []Organization
@@ -62,6 +63,21 @@ func (s *MemoryStore) Create(o Organization) error {
 func (s *MemoryStore) Get(id string) (Organization, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+	o, ok := s.orgs[id]
+	if !ok {
+		return Organization{}, ErrOrgNotFound
+	}
+	return o, nil
+}
+
+// GetByName retrieves an Organization by name.
+func (s *MemoryStore) GetByName(name string) (Organization, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	id, ok := s.names[name]
+	if !ok {
+		return Organization{}, ErrOrgNotFound
+	}
 	o, ok := s.orgs[id]
 	if !ok {
 		return Organization{}, ErrOrgNotFound
@@ -130,6 +146,18 @@ func (s *PostgresStore) Create(o Organization) error {
 func (s *PostgresStore) Get(id string) (Organization, error) {
 	var o Organization
 	if err := s.db.First(&o, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return Organization{}, ErrOrgNotFound
+		}
+		return Organization{}, err
+	}
+	return o, nil
+}
+
+// GetByName retrieves an organization by name.
+func (s *PostgresStore) GetByName(name string) (Organization, error) {
+	var o Organization
+	if err := s.db.First(&o, "name = ?", name).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Organization{}, ErrOrgNotFound
 		}
