@@ -26,14 +26,14 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{keys: make(map[string]RootKey)}
 }
 
-// NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *gorm.DB) *PostgresStore {
+// NewSQLStore creates a SQL-backed store.
+func NewSQLStore(db *gorm.DB) *SQLStore {
 	db.AutoMigrate(&RootKey{})
-	return &PostgresStore{db: db}
+	return &SQLStore{db: db}
 }
 
-// PostgresStore persists RootKeys in PostgreSQL.
-type PostgresStore struct {
+// SQLStore persists RootKeys in a SQL database.
+type SQLStore struct {
 	db *gorm.DB
 }
 
@@ -82,7 +82,7 @@ func (s *MemoryStore) Update(k RootKey) error {
 }
 
 // Create inserts a root key into the database.
-func (s *PostgresStore) Create(k RootKey) error {
+func (s *SQLStore) Create(k RootKey) error {
 	if err := s.db.Create(&k).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrKeyExists
@@ -93,7 +93,7 @@ func (s *PostgresStore) Create(k RootKey) error {
 }
 
 // Get retrieves a root key by ID.
-func (s *PostgresStore) Get(id string) (RootKey, error) {
+func (s *SQLStore) Get(id string) (RootKey, error) {
 	var k RootKey
 	if err := s.db.First(&k, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -105,7 +105,7 @@ func (s *PostgresStore) Get(id string) (RootKey, error) {
 }
 
 // Delete removes a root key.
-func (s *PostgresStore) Delete(id string) error {
+func (s *SQLStore) Delete(id string) error {
 	res := s.db.Delete(&RootKey{}, "id = ?", id)
 	if res.Error != nil {
 		return res.Error
@@ -117,7 +117,7 @@ func (s *PostgresStore) Delete(id string) error {
 }
 
 // Update replaces a root key.
-func (s *PostgresStore) Update(k RootKey) error {
+func (s *SQLStore) Update(k RootKey) error {
 	res := s.db.Model(&RootKey{}).Where("id = ?", k.ID).Updates(k)
 	if res.Error != nil {
 		return res.Error

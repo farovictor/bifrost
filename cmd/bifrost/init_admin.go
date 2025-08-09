@@ -37,14 +37,14 @@ var initAdminCmd = &cobra.Command{
 		sqlDB, _ := db.DB()
 		defer sqlDB.Close()
 
-		orgStore := orgs.NewPostgresStore(db)
+		orgStore := orgs.NewSQLStore(db)
 		orgID := utils.GenerateID()
 		o := orgs.Organization{ID: orgID, Name: initAdminOrgName, Domain: initAdminOrgDomain, Email: initAdminOrgEmail}
 		if err := orgStore.Create(o); err != nil {
 			return err
 		}
 
-		store := users.NewPostgresStore(db)
+		store := users.NewSQLStore(db)
 		key := config.AdminAPIKey()
 		if key == "" {
 			key = users.GenerateAPIKey()
@@ -62,7 +62,7 @@ var initAdminCmd = &cobra.Command{
 			}
 			return err
 		}
-		memStore := orgs.NewPostgresMembershipStore(db)
+		memStore := orgs.NewSQLMembershipStore(db)
 		m := orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: initAdminRole}
 		if err := memStore.Create(m); err != nil {
 			return err

@@ -29,14 +29,14 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{orgs: make(map[string]Organization), names: make(map[string]string)}
 }
 
-// NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *gorm.DB) *PostgresStore {
+// NewSQLStore creates a SQL-backed store.
+func NewSQLStore(db *gorm.DB) *SQLStore {
 	db.AutoMigrate(&Organization{})
-	return &PostgresStore{db: db}
+	return &SQLStore{db: db}
 }
 
-// PostgresStore persists organizations in PostgreSQL.
-type PostgresStore struct {
+// SQLStore persists organizations in a SQL database.
+type SQLStore struct {
 	db *gorm.DB
 }
 
@@ -113,7 +113,7 @@ func (s *MemoryStore) List() []Organization {
 }
 
 // Create inserts an organization into the database.
-func (s *PostgresStore) Create(o Organization) error {
+func (s *SQLStore) Create(o Organization) error {
 	if o.ID == "" {
 		o.ID = utils.GenerateID()
 	}
@@ -127,7 +127,7 @@ func (s *PostgresStore) Create(o Organization) error {
 }
 
 // Get retrieves an organization by ID.
-func (s *PostgresStore) Get(id string) (Organization, error) {
+func (s *SQLStore) Get(id string) (Organization, error) {
 	var o Organization
 	if err := s.db.First(&o, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -139,7 +139,7 @@ func (s *PostgresStore) Get(id string) (Organization, error) {
 }
 
 // Delete removes an organization.
-func (s *PostgresStore) Delete(id string) error {
+func (s *SQLStore) Delete(id string) error {
 	res := s.db.Delete(&Organization{}, "id = ?", id)
 	if res.Error != nil {
 		return res.Error
@@ -151,7 +151,7 @@ func (s *PostgresStore) Delete(id string) error {
 }
 
 // Update replaces an organization.
-func (s *PostgresStore) Update(o Organization) error {
+func (s *SQLStore) Update(o Organization) error {
 	res := s.db.Model(&Organization{}).Where("id = ?", o.ID).Updates(o)
 	if res.Error != nil {
 		return res.Error
@@ -163,7 +163,7 @@ func (s *PostgresStore) Update(o Organization) error {
 }
 
 // List returns all organizations.
-func (s *PostgresStore) List() []Organization {
+func (s *SQLStore) List() []Organization {
 	var out []Organization
 	if err := s.db.Find(&out).Error; err != nil {
 		return nil

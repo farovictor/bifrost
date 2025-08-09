@@ -2,7 +2,9 @@ package orgs
 
 import (
 	"errors"
-	"sync"
+	"strings"
+
+	"gorm.io/gorm"
 )
 
 // MembershipStore defines persistence behavior for Membership objects.
@@ -15,89 +17,79 @@ type MembershipStore interface {
 	ListByUser(userID string) []Membership
 }
 
-// MemoryMembershipStore keeps memberships in memory with concurrency safety.
-type MemoryMembershipStore struct {
-	mu          sync.RWMutex
-	memberships map[string]Membership
+// SQLMembershipStore persists memberships in a SQL database and implements MembershipStore.
+// It mirrors the in-memory MemoryMembershipStore behavior.
+type SQLMembershipStore struct {
+	db *gorm.DB
 }
 
-// NewMemoryMembershipStore creates an initialized MemoryMembershipStore.
-func NewMemoryMembershipStore() *MemoryMembershipStore {
-	return &MemoryMembershipStore{memberships: make(map[string]Membership)}
+// NewSQLMembershipStore creates a SQL-backed store and auto-migrates the Membership model.
+func NewSQLMembershipStore(db *gorm.DB) *SQLMembershipStore {
+	db.AutoMigrate(&Membership{})
+	return &SQLMembershipStore{db: db}
 }
 
-func membershipKey(userID, orgID string) string {
-	return userID + ":" + orgID
-}
-
-// Create inserts a new Membership. Returns error if the user/org pair already exists.
-func (s *MemoryMembershipStore) Create(m Membership) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	k := membershipKey(m.UserID, m.OrgID)
-	if _, ok := s.memberships[k]; ok {
-		return ErrMembershipExists
+// Create inserts a new membership. Returns error if the pair already exists.
+func (s *SQLMembershipStore) Create(m Membership) error {
+	if err := s.db.Create(&m).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) || strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return ErrMembershipExists
+		}
+		return err
 	}
-	s.memberships[k] = m
 	return nil
 }
 
-// Get retrieves a Membership by user and organization IDs.
-func (s *MemoryMembershipStore) Get(userID, orgID string) (Membership, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	k := membershipKey(userID, orgID)
-	m, ok := s.memberships[k]
-	if !ok {
-		return Membership{}, ErrMembershipNotFound
+// Get retrieves a membership by user and organization IDs.
+func (s *SQLMembershipStore) Get(userID, orgID string) (Membership, error) {
+	var m Membership
+	if err := s.db.First(&m, "user_id = ? AND org_id = ?", userID, orgID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return Membership{}, ErrMembershipNotFound
+		}
+		return Membership{}, err
 	}
 	return m, nil
 }
 
-// Delete removes a Membership from the store.
-func (s *MemoryMembershipStore) Delete(userID, orgID string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	k := membershipKey(userID, orgID)
-	if _, ok := s.memberships[k]; !ok {
+// Delete removes a membership.
+func (s *SQLMembershipStore) Delete(userID, orgID string) error {
+	res := s.db.Delete(&Membership{}, "user_id = ? AND org_id = ?", userID, orgID)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
 		return ErrMembershipNotFound
 	}
-	delete(s.memberships, k)
 	return nil
 }
 
-// Update replaces an existing Membership.
-func (s *MemoryMembershipStore) Update(m Membership) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	k := membershipKey(m.UserID, m.OrgID)
-	if _, ok := s.memberships[k]; !ok {
+// Update replaces an existing membership.
+func (s *SQLMembershipStore) Update(m Membership) error {
+	res := s.db.Model(&Membership{}).Where("user_id = ? AND org_id = ?", m.UserID, m.OrgID).Updates(m)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
 		return ErrMembershipNotFound
 	}
-	s.memberships[k] = m
 	return nil
 }
 
-// List returns all Memberships currently in the store.
-func (s *MemoryMembershipStore) List() []Membership {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	out := make([]Membership, 0, len(s.memberships))
-	for _, m := range s.memberships {
-		out = append(out, m)
+// List returns all memberships.
+func (s *SQLMembershipStore) List() []Membership {
+	var out []Membership
+	if err := s.db.Find(&out).Error; err != nil {
+		return nil
 	}
 	return out
 }
 
-// ListByUser returns memberships belonging to userID.
-func (s *MemoryMembershipStore) ListByUser(userID string) []Membership {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	out := make([]Membership, 0)
-	for _, m := range s.memberships {
-		if m.UserID == userID {
-			out = append(out, m)
-		}
+// ListByUser returns memberships for a specific user.
+func (s *SQLMembershipStore) ListByUser(userID string) []Membership {
+	var out []Membership
+	if err := s.db.Where("user_id = ?", userID).Find(&out).Error; err != nil {
+		return nil
 	}
 	return out
 }

@@ -27,14 +27,14 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{keys: make(map[string]VirtualKey)}
 }
 
-// NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *gorm.DB) *PostgresStore {
+// NewSQLStore creates a SQL-backed store.
+func NewSQLStore(db *gorm.DB) *SQLStore {
 	db.AutoMigrate(&VirtualKey{})
-	return &PostgresStore{db: db}
+	return &SQLStore{db: db}
 }
 
-// PostgresStore persists VirtualKeys in PostgreSQL.
-type PostgresStore struct {
+// SQLStore persists VirtualKeys in a SQL database.
+type SQLStore struct {
 	db *gorm.DB
 }
 
@@ -94,7 +94,7 @@ func (s *MemoryStore) List() []VirtualKey {
 }
 
 // Create inserts a virtual key into the database.
-func (s *PostgresStore) Create(k VirtualKey) error {
+func (s *SQLStore) Create(k VirtualKey) error {
 	if err := s.db.Create(&k).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrKeyExists
@@ -105,7 +105,7 @@ func (s *PostgresStore) Create(k VirtualKey) error {
 }
 
 // Get retrieves a virtual key by ID.
-func (s *PostgresStore) Get(id string) (VirtualKey, error) {
+func (s *SQLStore) Get(id string) (VirtualKey, error) {
 	var v VirtualKey
 	if err := s.db.First(&v, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -117,7 +117,7 @@ func (s *PostgresStore) Get(id string) (VirtualKey, error) {
 }
 
 // Update replaces an existing virtual key.
-func (s *PostgresStore) Update(id string, k VirtualKey) error {
+func (s *SQLStore) Update(id string, k VirtualKey) error {
 	res := s.db.Model(&VirtualKey{}).Where("id = ?", id).Updates(k)
 	if res.Error != nil {
 		return res.Error
@@ -129,7 +129,7 @@ func (s *PostgresStore) Update(id string, k VirtualKey) error {
 }
 
 // Delete removes a virtual key by ID.
-func (s *PostgresStore) Delete(id string) error {
+func (s *SQLStore) Delete(id string) error {
 	res := s.db.Delete(&VirtualKey{}, "id = ?", id)
 	if res.Error != nil {
 		return res.Error
@@ -141,7 +141,7 @@ func (s *PostgresStore) Delete(id string) error {
 }
 
 // List returns all virtual keys from the database.
-func (s *PostgresStore) List() []VirtualKey {
+func (s *SQLStore) List() []VirtualKey {
 	var out []VirtualKey
 	if err := s.db.Find(&out).Error; err != nil {
 		return nil
