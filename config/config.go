@@ -152,3 +152,13 @@ func DBType() string {
 func Mode() string {
 	return os.Getenv("BIFROST_MODE")
 }
+
+// StaticAPIKey returns the static API key used for test or sqlite modes.
+// It reads BIFROST_STATIC_API_KEY and defaults to "secret" when unset.
+func StaticAPIKey() string {
+	key := os.Getenv("BIFROST_STATIC_API_KEY")
+	if key == "" {
+		key = "secret"
+	}
+	return key
+}
