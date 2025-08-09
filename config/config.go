@@ -136,3 +136,19 @@ func AdminRole() string {
 	}
 	return role
 }
+
+// DBType returns the database backend to use.
+// It reads the BIFROST_DB environment variable and defaults to "sqlite".
+func DBType() string {
+	db := os.Getenv("BIFROST_DB")
+	if db == "" {
+		db = "sqlite"
+	}
+	return db
+}
+
+// Mode returns the operational mode for the application.
+// It reads the BIFROST_MODE environment variable and may be empty if unset.
+func Mode() string {
+	return os.Getenv("BIFROST_MODE")
+}

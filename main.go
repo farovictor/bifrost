@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
+	"os"
 
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
@@ -27,6 +29,23 @@ func init() {
 }
 
 func main() {
+	dbFlag := flag.String(
+		"db",
+		"",
+		"database backend to use (sqlite or postgres). Flag takes precedence over BIFROST_DB",
+	)
+	modeFlag := flag.String(
+		"mode",
+		"",
+		"application mode. Flag takes precedence over BIFROST_MODE",
+	)
+	flag.Parse()
+	if *dbFlag != "" {
+		os.Setenv("BIFROST_DB", *dbFlag)
+	}
+	if *modeFlag != "" {
+		os.Setenv("BIFROST_MODE", *modeFlag)
+	}
 
 	dsn := config.PostgresDSN()
 	if dsn == "" {
