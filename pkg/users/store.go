@@ -31,14 +31,14 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{users: make(map[string]User), byKey: make(map[string]User), byEmail: make(map[string]User)}
 }
 
-// NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *gorm.DB) *PostgresStore {
+// NewSQLStore creates a SQL-backed store.
+func NewSQLStore(db *gorm.DB) *SQLStore {
 	db.AutoMigrate(&User{})
-	return &PostgresStore{db: db}
+	return &SQLStore{db: db}
 }
 
-// PostgresStore persists users in a PostgreSQL database.
-type PostgresStore struct {
+// SQLStore persists users in a SQL database.
+type SQLStore struct {
 	db *gorm.DB
 }
 
@@ -125,7 +125,7 @@ func (s *MemoryStore) Update(u User) error {
 }
 
 // Create inserts a new user into the database.
-func (s *PostgresStore) Create(u User) error {
+func (s *SQLStore) Create(u User) error {
 	if u.ID == "" {
 		u.ID = utils.GenerateID()
 	}
@@ -139,7 +139,7 @@ func (s *PostgresStore) Create(u User) error {
 }
 
 // Get retrieves a user by ID.
-func (s *PostgresStore) Get(id string) (User, error) {
+func (s *SQLStore) Get(id string) (User, error) {
 	var u User
 	if err := s.db.First(&u, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -151,7 +151,7 @@ func (s *PostgresStore) Get(id string) (User, error) {
 }
 
 // GetByAPIKey retrieves a user by API key.
-func (s *PostgresStore) GetByAPIKey(key string) (User, error) {
+func (s *SQLStore) GetByAPIKey(key string) (User, error) {
 	var u User
 	if err := s.db.First(&u, "api_key = ?", key).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -163,7 +163,7 @@ func (s *PostgresStore) GetByAPIKey(key string) (User, error) {
 }
 
 // GetByEmail retrieves a user by email.
-func (s *PostgresStore) GetByEmail(email string) (User, error) {
+func (s *SQLStore) GetByEmail(email string) (User, error) {
 	var u User
 	if err := s.db.First(&u, "email = ?", email).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -175,7 +175,7 @@ func (s *PostgresStore) GetByEmail(email string) (User, error) {
 }
 
 // Delete removes a user by ID.
-func (s *PostgresStore) Delete(id string) error {
+func (s *SQLStore) Delete(id string) error {
 	res := s.db.Delete(&User{}, "id = ?", id)
 	if res.Error != nil {
 		return res.Error
@@ -187,7 +187,7 @@ func (s *PostgresStore) Delete(id string) error {
 }
 
 // Update modifies an existing user.
-func (s *PostgresStore) Update(u User) error {
+func (s *SQLStore) Update(u User) error {
 	res := s.db.Model(&User{}).Where("id = ?", u.ID).Updates(u)
 	if res.Error != nil {
 		return res.Error

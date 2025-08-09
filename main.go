@@ -67,12 +67,12 @@ func main() {
 			if err != nil {
 				logging.Logger.Fatal().Err(err).Msg("connect " + dbType)
 			}
-			routes.UserStore = users.NewPostgresStore(db)
-			routes.KeyStore = keys.NewPostgresStore(db)
-			routes.RootKeyStore = rootkeys.NewPostgresStore(db)
-			routes.ServiceStore = services.NewPostgresStore(db)
-			routes.OrgStore = orgs.NewPostgresStore(db)
-			routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
+			routes.UserStore = users.NewSQLStore(db)
+			routes.KeyStore = keys.NewSQLStore(db)
+			routes.RootKeyStore = rootkeys.NewSQLStore(db)
+			routes.ServiceStore = services.NewSQLStore(db)
+			routes.OrgStore = orgs.NewSQLStore(db)
+			routes.MembershipStore = orgs.NewSQLMembershipStore(db)
 			logging.Logger.Info().Str("db", dbType).Msg("Store set")
 		}
 	default:

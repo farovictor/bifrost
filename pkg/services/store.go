@@ -25,14 +25,14 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{services: make(map[string]Service)}
 }
 
-// NewPostgresStore creates a Postgres-backed store.
-func NewPostgresStore(db *gorm.DB) *PostgresStore {
+// NewSQLStore creates a SQL-backed store.
+func NewSQLStore(db *gorm.DB) *SQLStore {
 	db.AutoMigrate(&Service{})
-	return &PostgresStore{db: db}
+	return &SQLStore{db: db}
 }
 
-// PostgresStore persists services in PostgreSQL.
-type PostgresStore struct {
+// SQLStore persists services in a SQL database.
+type SQLStore struct {
 	db *gorm.DB
 }
 
@@ -70,7 +70,7 @@ func (s *MemoryStore) Delete(id string) error {
 }
 
 // Create inserts a service into the database.
-func (s *PostgresStore) Create(svc Service) error {
+func (s *SQLStore) Create(svc Service) error {
 	if err := s.db.Create(&svc).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrServiceExists
@@ -81,7 +81,7 @@ func (s *PostgresStore) Create(svc Service) error {
 }
 
 // Get retrieves a service by ID.
-func (s *PostgresStore) Get(id string) (Service, error) {
+func (s *SQLStore) Get(id string) (Service, error) {
 	var svc Service
 	if err := s.db.First(&svc, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -93,7 +93,7 @@ func (s *PostgresStore) Get(id string) (Service, error) {
 }
 
 // Delete removes a service.
-func (s *PostgresStore) Delete(id string) error {
+func (s *SQLStore) Delete(id string) error {
 	res := s.db.Delete(&Service{}, "id = ?", id)
 	if res.Error != nil {
 		return res.Error
