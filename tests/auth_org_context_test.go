@@ -11,6 +11,7 @@ import (
 	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
@@ -123,7 +124,7 @@ func TestUserCreationOrgContext(t *testing.T) {
 			}
 
 			req2 := httptest.NewRequest(http.MethodGet, "/v1/ctx", nil)
-			req2.Header.Set("X-API-Key", resp.APIKey)
+			req2.Header.Set("X-API-Key", config.StaticAPIKey())
 			req2.Header.Set("Authorization", "Bearer "+resp.Token)
 			rr2 := httptest.NewRecorder()
 			router.ServeHTTP(rr2, req2)
