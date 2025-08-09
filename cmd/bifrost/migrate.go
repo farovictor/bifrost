@@ -15,16 +15,21 @@ var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Apply database migrations",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		dbType := config.DBType()
 		dsn := config.PostgresDSN()
-		if dsn == "" {
+		if dbType == "postgres" && dsn == "" {
 			return fmt.Errorf("POSTGRES_DSN is not set")
 		}
-		db, err := database.Connect(config.DBType(), dsn)
+		db, err := database.Connect(dbType, dsn)
 		if err != nil {
 			return err
 		}
 		sqlDB, _ := db.DB()
 		defer sqlDB.Close()
+		if dbType == "sqlite" {
+			fmt.Fprintln(cmd.OutOrStdout(), "sqlite selected; skipping migrations")
+			return nil
+		}
 		files, err := filepath.Glob(filepath.Join("migrations", "*.sql"))
 		if err != nil {
 			return err
