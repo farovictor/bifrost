@@ -22,6 +22,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -31,24 +33,23 @@ func init() {
 func main() {
 	dbFlag := flag.String(
 		"db",
-		"",
+		config.DBType(),
 		"database backend to use (sqlite or postgres). Flag takes precedence over BIFROST_DB",
 	)
 	modeFlag := flag.String(
 		"mode",
-		"",
+		config.Mode(),
 		"application mode. Flag takes precedence over BIFROST_MODE",
 	)
 	flag.Parse()
-	if *dbFlag != "" {
-		os.Setenv("BIFROST_DB", *dbFlag)
-	}
-	if *modeFlag != "" {
-		os.Setenv("BIFROST_MODE", *modeFlag)
+	os.Setenv("BIFROST_DB", *dbFlag)
+	os.Setenv("BIFROST_MODE", *modeFlag)
+	if config.Mode() == "test" {
+		os.Setenv("BIFROST_DB", "sqlite")
 	}
 
 	dsn := config.PostgresDSN()
-	if dsn == "" {
+	initMemoryStores := func() {
 		routes.UserStore = users.NewMemoryStore()
 		routes.KeyStore = keys.NewMemoryStore()
 		routes.RootKeyStore = rootkeys.NewMemoryStore()
@@ -56,19 +57,43 @@ func main() {
 		routes.OrgStore = orgs.NewMemoryStore()
 		routes.MembershipStore = orgs.NewMemoryMembershipStore()
 		logging.Logger.Info().Msg("In-Memory Store set")
-	} else {
-		db, err := database.Connect(dsn)
-		if err != nil {
-			logging.Logger.Fatal().Err(err).Msg("connect postgres")
-		}
+	}
 
-		routes.UserStore = users.NewPostgresStore(db)
-		routes.KeyStore = keys.NewPostgresStore(db)
-		routes.RootKeyStore = rootkeys.NewPostgresStore(db)
-		routes.ServiceStore = services.NewPostgresStore(db)
-		routes.OrgStore = orgs.NewPostgresStore(db)
-		routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
-		logging.Logger.Info().Msg("Postgres Store set")
+	switch config.DBType() {
+	case "sqlite":
+		if dsn == "" {
+			initMemoryStores()
+		} else {
+			db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+			if err != nil {
+				logging.Logger.Fatal().Err(err).Msg("connect sqlite")
+			}
+			routes.UserStore = users.NewPostgresStore(db)
+			routes.KeyStore = keys.NewPostgresStore(db)
+			routes.RootKeyStore = rootkeys.NewPostgresStore(db)
+			routes.ServiceStore = services.NewPostgresStore(db)
+			routes.OrgStore = orgs.NewPostgresStore(db)
+			routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
+			logging.Logger.Info().Msg("SQLite Store set")
+		}
+	case "postgres":
+		if dsn == "" {
+			initMemoryStores()
+		} else {
+			db, err := database.Connect(dsn)
+			if err != nil {
+				logging.Logger.Fatal().Err(err).Msg("connect postgres")
+			}
+			routes.UserStore = users.NewPostgresStore(db)
+			routes.KeyStore = keys.NewPostgresStore(db)
+			routes.RootKeyStore = rootkeys.NewPostgresStore(db)
+			routes.ServiceStore = services.NewPostgresStore(db)
+			routes.OrgStore = orgs.NewPostgresStore(db)
+			routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
+			logging.Logger.Info().Msg("Postgres Store set")
+		}
+	default:
+		initMemoryStores()
 	}
 
 	if config.MetricsEnabled() {
