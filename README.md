@@ -91,6 +91,8 @@ Bifrost can be configured through the following environment variables:
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
+| `BIFROST_DB` | database backend (`sqlite` or `postgres`) | `sqlite` |
+| `BIFROST_MODE` | operational mode (`dev`, `prod`, etc.) | *(empty)* |
 | `BIFROST_SIGNING_KEY` | base64 HMAC key for auth tokens | random each start |
 | `BIFROST_ADMIN_API_KEY` | API key for the admin user | random |
 | `BIFROST_ADMIN_NAME` | name for the admin user | `Admin` |
@@ -109,6 +111,14 @@ You can export these variables or prefix them when starting the server.
 ```bash
 BIFROST_PORT=8080 REDIS_ADDR=localhost:6379 make run
 ```
+
+### Command-Line Flags
+
+The server and the `bifrost` CLI accept the following flags, which override
+their corresponding environment variables when provided:
+
+- `--db` (`BIFROST_DB`): database backend to use (`sqlite` or `postgres`).
+- `--mode` (`BIFROST_MODE`): application mode, such as `dev` or `prod`.
 
 ### Virtual Key Format
 
