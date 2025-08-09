@@ -1,13 +1,26 @@
 package database
 
 import (
+	"fmt"
+
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// Connect opens a Postgres connection using GORM and verifies it.
-func Connect(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+// Connect opens a database connection using GORM and verifies it.
+func Connect(dbType, dsn string) (*gorm.DB, error) {
+	var dialector gorm.Dialector
+	switch dbType {
+	case "postgres":
+		dialector = postgres.Open(dsn)
+	case "sqlite":
+		dialector = sqlite.Open(dsn)
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", dbType)
+	}
+
+	db, err := gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

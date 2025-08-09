@@ -22,8 +22,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 func init() {
@@ -49,6 +47,7 @@ func main() {
 	}
 
 	dsn := config.PostgresDSN()
+	dbType := config.DBType()
 	initMemoryStores := func() {
 		routes.UserStore = users.NewMemoryStore()
 		routes.KeyStore = keys.NewMemoryStore()
@@ -59,14 +58,14 @@ func main() {
 		logging.Logger.Info().Msg("In-Memory Store set")
 	}
 
-	switch config.DBType() {
-	case "sqlite":
+	switch dbType {
+	case "sqlite", "postgres":
 		if dsn == "" {
 			initMemoryStores()
 		} else {
-			db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+			db, err := database.Connect(dbType, dsn)
 			if err != nil {
-				logging.Logger.Fatal().Err(err).Msg("connect sqlite")
+				logging.Logger.Fatal().Err(err).Msg("connect " + dbType)
 			}
 			routes.UserStore = users.NewPostgresStore(db)
 			routes.KeyStore = keys.NewPostgresStore(db)
@@ -74,23 +73,7 @@ func main() {
 			routes.ServiceStore = services.NewPostgresStore(db)
 			routes.OrgStore = orgs.NewPostgresStore(db)
 			routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
-			logging.Logger.Info().Msg("SQLite Store set")
-		}
-	case "postgres":
-		if dsn == "" {
-			initMemoryStores()
-		} else {
-			db, err := database.Connect(dsn)
-			if err != nil {
-				logging.Logger.Fatal().Err(err).Msg("connect postgres")
-			}
-			routes.UserStore = users.NewPostgresStore(db)
-			routes.KeyStore = keys.NewPostgresStore(db)
-			routes.RootKeyStore = rootkeys.NewPostgresStore(db)
-			routes.ServiceStore = services.NewPostgresStore(db)
-			routes.OrgStore = orgs.NewPostgresStore(db)
-			routes.MembershipStore = orgs.NewPostgresMembershipStore(db)
-			logging.Logger.Info().Msg("Postgres Store set")
+			logging.Logger.Info().Str("db", dbType).Msg("Store set")
 		}
 	default:
 		initMemoryStores()

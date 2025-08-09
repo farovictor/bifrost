@@ -19,7 +19,7 @@ var migrateCmd = &cobra.Command{
 		if dsn == "" {
 			return fmt.Errorf("POSTGRES_DSN is not set")
 		}
-		db, err := database.Connect(dsn)
+		db, err := database.Connect(config.DBType(), dsn)
 		if err != nil {
 			return err
 		}
