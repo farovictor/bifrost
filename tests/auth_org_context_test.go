@@ -46,6 +46,7 @@ func setupCtxRouter() http.Handler {
 }
 
 func TestUserCreationOrgContext(t *testing.T) {
+	t.Setenv("BIFROST_MODE", "test")
 	cases := []struct {
 		name    string
 		orgName string
