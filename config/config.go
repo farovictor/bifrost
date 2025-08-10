@@ -138,11 +138,11 @@ func AdminRole() string {
 }
 
 // DBType returns the database backend to use.
-// It reads the BIFROST_DB environment variable and defaults to "sqlite".
+// It reads the BIFROST_DB environment variable and defaults to "postgres".
 func DBType() string {
 	db := os.Getenv("BIFROST_DB")
 	if db == "" {
-		db = "sqlite"
+		db = "postgres"
 	}
 	return db
 }

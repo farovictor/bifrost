@@ -18,4 +18,6 @@ commands are listed below:
 
 
 All commands talk to `http://localhost:3333` by default. Use `--addr` to
-override the API address.
+override the API address. The root command also exposes `--db` and `--mode`
+flags which set `BIFROST_DB` and `BIFROST_MODE` for subcommands. When `--db`
+is `sqlite`, the `migrate` command skips applying SQL files.

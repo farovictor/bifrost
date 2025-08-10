@@ -26,11 +26,12 @@ var initAdminCmd = &cobra.Command{
 	Use:   "init-admin",
 	Short: "Create an admin user in the database",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		dbType := config.DBType()
 		dsn := config.PostgresDSN()
-		if dsn == "" {
+		if dbType == "postgres" && dsn == "" {
 			return fmt.Errorf("POSTGRES_DSN is not set")
 		}
-		db, err := database.Connect(config.DBType(), dsn)
+		db, err := database.Connect(dbType, dsn)
 		if err != nil {
 			return err
 		}
