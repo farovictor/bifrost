@@ -109,7 +109,8 @@ Bifrost can be configured through the following environment variables:
 | `BIFROST_STATIC_API_KEY` | static API key for test or sqlite mode | `secret` |
 
 When running with the SQLite backend or in test mode, the server accepts this
-static API key and skips user lookups.
+static API key and skips user lookups. Bearer tokens are not verified and any
+value is accepted.
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 

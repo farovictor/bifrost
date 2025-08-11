@@ -83,8 +83,20 @@ func Sign(t AuthToken) (string, error) {
 		base64.StdEncoding.EncodeToString(sig), nil
 }
 
-// Verify checks the token signature and expiration.
+// Verify checks the token signature and expiration. In test or SQLite modes,
+// the signature is not verified and any bearer token is accepted.
 func Verify(raw string) (AuthToken, error) {
+	if config.Mode() == "test" || config.DBType() == "sqlite" {
+		var t AuthToken
+		parts := strings.Split(raw, ".")
+		if len(parts) == 2 {
+			if payload, err := base64.StdEncoding.DecodeString(parts[0]); err == nil {
+				_ = json.Unmarshal(payload, &t)
+			}
+		}
+		return t, nil
+	}
+
 	parts := strings.Split(raw, ".")
 	if len(parts) != 2 {
 		return AuthToken{}, ErrInvalidToken

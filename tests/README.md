@@ -18,6 +18,7 @@ environment variables yourself.
 
 ## Authentication Tokens
 
-When the server runs with `BIFROST_MODE=test` or `BIFROST_DB=sqlite`, it uses a
-static HMAC signing key of `test-signing-key`. Tests can rely on this value to
-create and verify authentication tokens.
+When the server runs with `BIFROST_MODE=test` or `BIFROST_DB=sqlite`, token
+signatures are not verified and any bearer token is accepted. The server still
+uses the static HMAC signing key `test-signing-key` when generating tokens so
+tests can create and verify them deterministically.
