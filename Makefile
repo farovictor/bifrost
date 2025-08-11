@@ -22,12 +22,12 @@ run:
 	BIFROST_LOG_FORMAT=console go run .
 
 test:
-        BIFROST_MODE=test BIFROST_DB=sqlite DATABASE_DSN='file::memory:?cache=shared' go test ./... -coverprofile=coverage.out
-        go tool cover -func=coverage.out
+	BIFROST_MODE=test BIFROST_DB=sqlite DATABASE_DSN='file::memory:?cache=shared' go test ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out
 
 # compose-up: start Docker Compose environment
 compose-up:
-		@docker compose up -d --build
+	@docker compose up -d --build
 	@token=$$(docker compose logs setup-job | tail -n 1 | awk '{print $$3}'); \
 	echo "Your token is: $$token"
 
