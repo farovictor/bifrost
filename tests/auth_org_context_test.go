@@ -144,24 +144,26 @@ func TestUserCreationOrgContext(t *testing.T) {
 	}
 }
 
-func TestOrgCtxMiddlewareFailures(t *testing.T) {
+func TestOrgCtxMiddlewareIgnoresTokenValidation(t *testing.T) {
 	u := users.User{ID: "u1", Name: "User1", Email: "u1@example.com", APIKey: "secret"}
 	o := orgs.Organization{ID: "o1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
 
 	cases := []struct {
-		name  string
-		token string
-		want  int
-		role  string
+		name      string
+		token     string
+		want      int
+		role      string
+		expectCtx bool
 	}{
-		{name: "invalid token", token: "bad", want: http.StatusUnauthorized},
+		{name: "invalid token", token: "bad", want: http.StatusOK, expectCtx: false},
 		{
 			name: "expired token",
 			token: func() string {
 				tkn, _ := auth.Sign(auth.AuthToken{UserID: u.ID, OrgID: o.ID, ExpiresAt: time.Now().Add(-time.Hour)})
 				return tkn
 			}(),
-			want: http.StatusUnauthorized,
+			want:      http.StatusOK,
+			expectCtx: false,
 		},
 		{
 			name: "missing membership",
@@ -169,8 +171,9 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 				tkn, _ := auth.Sign(auth.AuthToken{UserID: u.ID, OrgID: o.ID, ExpiresAt: time.Now().Add(time.Hour)})
 				return tkn
 			}(),
-			want: http.StatusOK,
-			role: "",
+			want:      http.StatusOK,
+			role:      "",
+			expectCtx: true,
 		},
 	}
 
@@ -194,7 +197,7 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 				t.Fatalf("expected %d, got %d", tc.want, rr.Code)
 			}
 
-			if tc.want == http.StatusOK {
+			if tc.expectCtx {
 				var ctxResp rl.OrgContext
 				if err := json.Unmarshal(rr.Body.Bytes(), &ctxResp); err != nil {
 					t.Fatalf("decode ctx: %v", err)

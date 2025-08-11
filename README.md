@@ -42,12 +42,12 @@ go test ./...
 See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
-The Compose file sets `POSTGRES_DSN` for Bifrost to connect to the bundled
+The Compose file sets `DATABASE_DSN` for Bifrost to connect to the bundled
 PostgreSQL service. If you run the server manually, configure the variable like
 so:
 
 ```bash
-export POSTGRES_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable"
+export DATABASE_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable"
 ```
 
 ## Example Request
@@ -61,10 +61,15 @@ curl -H "X-Virtual-Key: <key>" http://localhost:3333/v1/proxy/hello
 You can also supply the key via the `key` query parameter instead of the header.
 
 ## Running Tests
-Run the suite with:
+Run the suite with the Makefile, which enables test mode and an in-memory
+SQLite database:
+
 ```bash
-go test ./...
+make test
 ```
+
+This executes `go test ./...` with `BIFROST_MODE=test`, `BIFROST_DB=sqlite`, and
+`DATABASE_DSN=file::memory:?cache=shared`.
 
 ### Code Coverage
 
@@ -87,13 +92,13 @@ Bifrost can be configured through the following environment variables:
 | `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
 | `REDIS_DB` | numeric Redis DB index to use | `0` |
 | `REDIS_PROTOCOL` | Redis protocol version | `3` |
-| `POSTGRES_DSN` | connection string for PostgreSQL | *(empty)* |
+| `DATABASE_DSN` | connection string for the database | *(empty)* |
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |
 | `BIFROST_DB` | database backend (`sqlite` or `postgres`) | `postgres` |
 | `BIFROST_MODE` | operational mode (`dev`, `prod`, etc.) | *(empty)* |
-| `BIFROST_SIGNING_KEY` | base64 HMAC key for auth tokens | random each start |
+| `BIFROST_SIGNING_KEY` | base64 HMAC key for auth tokens; ignored in test or sqlite mode where `test-signing-key` is used | random each start |
 | `BIFROST_ADMIN_API_KEY` | API key for the admin user | random |
 | `BIFROST_ADMIN_NAME` | name for the admin user | `Admin` |
 | `BIFROST_ADMIN_EMAIL` | email for the admin user | `admin@example.com` |
@@ -104,7 +109,8 @@ Bifrost can be configured through the following environment variables:
 | `BIFROST_STATIC_API_KEY` | static API key for test or sqlite mode | `secret` |
 
 When running with the SQLite backend or in test mode, the server accepts this
-static API key and skips user lookups.
+static API key and skips user lookups. Bearer tokens are not verified and any
+value is accepted.
 
 Use these variables to control the verbosity and choose between machine-readable JSON logs or a console-friendly format.
 

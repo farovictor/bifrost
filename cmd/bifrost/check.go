@@ -15,10 +15,10 @@ var checkCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dbType := config.DBType()
 		var dsn string
-		if dbType == "postgres" {
-			dsn = config.PostgresDSN()
+		if dbType == "postgres" || dbType == "sqlite" {
+			dsn = config.DatabaseDSN()
 			if dsn == "" {
-				return fmt.Errorf("POSTGRES_DSN is not set")
+				return fmt.Errorf("DATABASE_DSN is not set")
 			}
 		}
 		db, err := database.Connect(dbType, dsn)
