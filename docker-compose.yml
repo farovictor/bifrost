@@ -7,7 +7,7 @@ services:
       BIFROST_SIGNING_KEY: "Ymlmcm9zdA=="
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
-      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      DATABASE_DSN: ${DATABASE_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
     depends_on:
       redis:
         condition: service_started
@@ -26,7 +26,7 @@ services:
       BIFROST_SIGNING_KEY: "Ymlmcm9zdA=="
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
-      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      DATABASE_DSN: ${DATABASE_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
     entrypoint: ["/app/bifrost-cli"]
     networks:
       - internal
@@ -37,7 +37,7 @@ services:
       BIFROST_SIGNING_KEY: "Ymlmcm9zdA=="
       BIFROST_PORT: "3333"
       REDIS_ADDR: ${REDIS_ADDR:-redis:6379}
-      POSTGRES_DSN: ${POSTGRES_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
+      DATABASE_DSN: ${DATABASE_DSN:-postgres://bifrost:bifrost@postgres:5432/bifrost?sslmode=disable}
     entrypoint: ["/app/bifrost-cli"]
     command: ["init-admin", "--name", "admin", "--org-name", "demo-org", "--email", "admin@admin.com"]
     depends_on:

@@ -12,7 +12,7 @@ make test
 ```
 
 This invokes `go test ./...` with `BIFROST_MODE=test`, `BIFROST_DB=sqlite`, and
-`POSTGRES_DSN=file::memory:?cache=shared` so that all packages share the same
+`DATABASE_DSN=file::memory:?cache=shared` so that all packages share the same
 ephemeral database. If you prefer to call `go test` directly, set these
 environment variables yourself.
 

@@ -7,7 +7,7 @@ import (
 
 func TestMigrateSkipsSQLite(t *testing.T) {
 	t.Setenv("BIFROST_DB", "sqlite")
-	t.Setenv("POSTGRES_DSN", "file::memory:?cache=shared")
+	t.Setenv("DATABASE_DSN", "file::memory:?cache=shared")
 	buf := &bytes.Buffer{}
 	migrateCmd.SetOut(buf)
 	migrateCmd.SetErr(buf)

@@ -42,12 +42,12 @@ go test ./...
 See `test-rate-limiting.sh` for a small script that exercises the rate limit
 middleware against the Compose setup.
 
-The Compose file sets `POSTGRES_DSN` for Bifrost to connect to the bundled
+The Compose file sets `DATABASE_DSN` for Bifrost to connect to the bundled
 PostgreSQL service. If you run the server manually, configure the variable like
 so:
 
 ```bash
-export POSTGRES_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable"
+export DATABASE_DSN="postgres://bifrost:bifrost@localhost:5432/bifrost?sslmode=disable"
 ```
 
 ## Example Request
@@ -69,7 +69,7 @@ make test
 ```
 
 This executes `go test ./...` with `BIFROST_MODE=test`, `BIFROST_DB=sqlite`, and
-`POSTGRES_DSN=file::memory:?cache=shared`.
+`DATABASE_DSN=file::memory:?cache=shared`.
 
 ### Code Coverage
 
@@ -92,7 +92,7 @@ Bifrost can be configured through the following environment variables:
 | `REDIS_PASSWORD` | password for Redis, if required | *(empty)* |
 | `REDIS_DB` | numeric Redis DB index to use | `0` |
 | `REDIS_PROTOCOL` | Redis protocol version | `3` |
-| `POSTGRES_DSN` | connection string for PostgreSQL | *(empty)* |
+| `DATABASE_DSN` | connection string for the database | *(empty)* |
 | `BIFROST_LOG_LEVEL` | log level (`debug`, `info`, `warn`, `error`) | `info` |
 | `BIFROST_LOG_FORMAT` | log output format (`json` or `console`) | `json` |
 | `BIFROST_ENABLE_METRICS` | expose Prometheus metrics | `false` |

@@ -8,7 +8,7 @@ environment variables. Key variables include:
 - `REDIS_PASSWORD` – optional Redis password
 - `REDIS_DB` – Redis DB index (default `0`)
 - `REDIS_PROTOCOL` – Redis protocol version (default `3`)
-- `POSTGRES_DSN` – Postgres connection string
+- `DATABASE_DSN` – database connection string
 - `BIFROST_ENABLE_METRICS` – enable Prometheus metrics when set
 - `BIFROST_SIGNING_KEY` – base64 HMAC key for auth tokens, random when unset
 - `BIFROST_ADMIN_API_KEY` – API key for the admin, random when unset

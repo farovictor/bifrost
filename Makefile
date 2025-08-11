@@ -3,7 +3,7 @@
 export BIFROST_SIGNING_KEY
 export BIFROST_PORT
 export REDIS_ADDR
-export POSTGRES_DSN
+export DATABASE_DSN
 export BIFROST_MODE
 export BIFROST_DB
 
@@ -22,7 +22,7 @@ run:
 	BIFROST_LOG_FORMAT=console go run .
 
 test:
-        BIFROST_MODE=test BIFROST_DB=sqlite POSTGRES_DSN='file::memory:?cache=shared' go test ./... -coverprofile=coverage.out
+        BIFROST_MODE=test BIFROST_DB=sqlite DATABASE_DSN='file::memory:?cache=shared' go test ./... -coverprofile=coverage.out
         go tool cover -func=coverage.out
 
 # compose-up: start Docker Compose environment

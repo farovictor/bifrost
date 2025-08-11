@@ -46,7 +46,7 @@ func main() {
 		os.Setenv("BIFROST_DB", "sqlite")
 	}
 
-	dsn := config.PostgresDSN()
+	dsn := config.DatabaseDSN()
 	dbType := config.DBType()
 	initMemoryStores := func() {
 		routes.UserStore = users.NewMemoryStore()

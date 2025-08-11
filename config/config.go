@@ -65,10 +65,10 @@ func MetricsEnabled() bool {
 	}
 }
 
-// PostgresDSN returns the DSN string for connecting to Postgres.
-// It reads the POSTGRES_DSN environment variable and may be empty if unset.
-func PostgresDSN() string {
-	return os.Getenv("POSTGRES_DSN")
+// DatabaseDSN returns the DSN string for connecting to the database.
+// It reads the DATABASE_DSN environment variable and may be empty if unset.
+func DatabaseDSN() string {
+	return os.Getenv("DATABASE_DSN")
 }
 
 // AdminAPIKey returns the API key for the initial admin user. When
