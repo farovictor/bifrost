@@ -4,13 +4,17 @@ This directory contains integration tests for the HTTP routes provided by the Bi
 
 ## Running
 
-Execute all tests from the repository root using the standard Go tooling:
+Run the suite with the provided Makefile target, which configures test mode and
+an in-memory SQLite database:
 
 ```bash
-go test ./...
+make test
 ```
 
-The command will build and run every `*_test.go` file, including the route tests found here.
+This invokes `go test ./...` with `BIFROST_MODE=test`, `BIFROST_DB=sqlite`, and
+`POSTGRES_DSN=file::memory:?cache=shared` so that all packages share the same
+ephemeral database. If you prefer to call `go test` directly, set these
+environment variables yourself.
 
 ## Authentication Tokens
 

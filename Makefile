@@ -4,6 +4,8 @@ export BIFROST_SIGNING_KEY
 export BIFROST_PORT
 export REDIS_ADDR
 export POSTGRES_DSN
+export BIFROST_MODE
+export BIFROST_DB
 
 # setup: Install Go 1.23.8 and project dependencies
 setup:
@@ -20,8 +22,8 @@ run:
 	BIFROST_LOG_FORMAT=console go run .
 
 test:
-	go test ./... -coverprofile=coverage.out
-	go tool cover -func=coverage.out
+        BIFROST_MODE=test BIFROST_DB=sqlite POSTGRES_DSN='file::memory:?cache=shared' go test ./... -coverprofile=coverage.out
+        go tool cover -func=coverage.out
 
 # compose-up: start Docker Compose environment
 compose-up:
