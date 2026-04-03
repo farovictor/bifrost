@@ -6,6 +6,8 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/utils"
 	"gorm.io/gorm"
+
+	"github.com/farovictor/bifrost/pkg/database"
 )
 
 // Store defines persistence behavior for Organization objects.
@@ -118,7 +120,7 @@ func (s *SQLStore) Create(o Organization) error {
 		o.ID = utils.GenerateID()
 	}
 	if err := s.db.Create(&o).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if database.IsDuplicateError(err) {
 			return ErrOrgExists
 		}
 		return err

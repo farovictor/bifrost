@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"gorm.io/gorm"
+
+	"github.com/farovictor/bifrost/pkg/database"
 )
 
 // Store defines persistence behavior for RootKey objects.
@@ -85,7 +87,7 @@ func (s *MemoryStore) Update(k RootKey) error {
 // Create inserts a root key into the database.
 func (s *SQLStore) Create(k RootKey) error {
 	if err := s.db.Create(&k).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if database.IsDuplicateError(err) {
 			return ErrKeyExists
 		}
 		return err

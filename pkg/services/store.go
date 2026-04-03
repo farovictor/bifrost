@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"gorm.io/gorm"
+
+	"github.com/farovictor/bifrost/pkg/database"
 )
 
 // Store defines persistence behavior for Service objects.
@@ -84,7 +86,7 @@ func (s *MemoryStore) List() []Service {
 // Create inserts a service into the database.
 func (s *SQLStore) Create(svc Service) error {
 	if err := s.db.Create(&svc).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if database.IsDuplicateError(err) {
 			return ErrServiceExists
 		}
 		return err

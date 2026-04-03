@@ -1,12 +1,22 @@
 package database
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+// IsDuplicateError reports whether err represents a unique-constraint violation
+// for both PostgreSQL (gorm.ErrDuplicatedKey) and SQLite (raw string match).
+func IsDuplicateError(err error) bool {
+	return errors.Is(err, gorm.ErrDuplicatedKey) ||
+		strings.Contains(err.Error(), "UNIQUE constraint failed") ||
+		strings.Contains(err.Error(), "duplicate key value")
+}
 
 // Connect opens a database connection using GORM and verifies it.
 func Connect(dbType, dsn string) (*gorm.DB, error) {

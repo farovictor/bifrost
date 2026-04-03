@@ -6,6 +6,8 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/utils"
 	"gorm.io/gorm"
+
+	"github.com/farovictor/bifrost/pkg/database"
 )
 
 // Store defines the persistence behavior for User objects.
@@ -130,7 +132,7 @@ func (s *SQLStore) Create(u User) error {
 		u.ID = utils.GenerateID()
 	}
 	if err := s.db.Create(&u).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if database.IsDuplicateError(err) {
 			return ErrUserExists
 		}
 		return err

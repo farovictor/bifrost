@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"gorm.io/gorm"
+
+	"github.com/farovictor/bifrost/pkg/database"
 )
 
 // Store defines persistence behavior for VirtualKey objects.
@@ -96,7 +98,7 @@ func (s *MemoryStore) List() []VirtualKey {
 // Create inserts a virtual key into the database.
 func (s *SQLStore) Create(k VirtualKey) error {
 	if err := s.db.Create(&k).Error; err != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if database.IsDuplicateError(err) {
 			return ErrKeyExists
 		}
 		return err

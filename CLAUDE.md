@@ -38,16 +38,11 @@ GET /v1/proxy/path?key=vk-1
   → Handler.Proxy (validates key, enforces scope+expiry, injects creds, reverse-proxy)
 ```
 
-### Proxy credential injection
-
-`Service.CredentialHeader` controls how the root key is forwarded:
-- `""` / `"X-API-Key"` → `X-API-Key: <key>` (default)
-- `"Authorization"` → `Authorization: Bearer <key>`
-- anything else → `<header>: <key>`
-
 ### Error responses
 
 All handlers use `writeError(w, message, statusCode)` which writes `{"error":"message"}` with `Content-Type: application/json`.
+
+See [doc/architecture.md](doc/architecture.md) for full architecture details and [doc/api.md](doc/api.md) for HTTP API reference.
 
 ## Test helpers (`tests/`)
 
@@ -71,5 +66,5 @@ When adding a new method to an interface, implement it on both `MemoryStore` and
 
 - **Phase 0** ✅ Server struct DI, proxy decoupled from auth, TestEnv helpers
 - **Phase 1** ✅ List endpoints, org/membership HTTP endpoints, JSON errors, configurable credential injection
-- **Phase 2** (next) ~70% test coverage, SQL store integration tests, token expiry + rate-limit edge cases
+- **Phase 2** ✅ 77.6% test coverage, SQL store integration tests, middleware tests, error-path coverage
 - **Phase 3** Vault backend, management dashboard, OPA, Kubernetes operator
