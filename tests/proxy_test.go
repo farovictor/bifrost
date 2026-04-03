@@ -25,7 +25,7 @@ func TestProxy(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			s := newTestServer()
+			s := newTestServer(t)
 
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("X-API-Key") != "real" {
@@ -95,7 +95,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			s := newTestServer()
+			s := newTestServer(t)
 
 			called := false
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

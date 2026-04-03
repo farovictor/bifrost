@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetUserInfo(t *testing.T) {
-	s := newTestServer()
+	s := newTestServer(t)
 
 	u := users.User{ID: "u1", Name: "User", Email: "u@example.com", APIKey: "key"}
 	s.UserStore.Create(u)
