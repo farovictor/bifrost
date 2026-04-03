@@ -117,6 +117,9 @@ func main() {
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Get("/user", srv.GetUserInfo)
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/user/rootkeys", srv.CreateRootKey)
 
+		// Proxy - authenticated by the virtual key; no API key or token required
+		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
+
 		// Endpoints requiring API key and auth token
 		r.Group(func(r chi.Router) {
 			r.Use(rl.AuthMiddleware(srv.UserStore))
@@ -135,8 +138,6 @@ func main() {
 			r.Delete("/services/{id}", srv.DeleteService)
 
 			r.With(rl.RateLimitMiddleware(srv.KeyStore)).Post("/rate", v1.SayHello)
-
-			r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
 		})
 	})
 
