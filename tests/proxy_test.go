@@ -11,7 +11,6 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	"github.com/farovictor/bifrost/pkg/users"
 )
 
 func TestProxy(t *testing.T) {
@@ -27,8 +26,6 @@ func TestProxy(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			s := newTestServer()
-			u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-			s.UserStore.Create(u)
 
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Header.Get("X-API-Key") != "real" {
@@ -58,21 +55,18 @@ func TestProxy(t *testing.T) {
 			if err := s.ServiceStore.Create(svc); err != nil {
 				t.Fatalf("seed service: %v", err)
 			}
-			k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
+			k := keys.VirtualKey{ID: "vkey-" + tc.name, Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100}
 			if err := s.KeyStore.Create(k); err != nil {
 				t.Fatalf("seed key: %v", err)
 			}
 
 			router := setupRouter(s)
-			url := "/v1/proxy/backend?foo=bar"
-			req := httptest.NewRequest(http.MethodGet, url, nil)
+			req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend?foo=bar", nil)
 			if tc.useQuery {
 				req = httptest.NewRequest(http.MethodGet, "/v1/proxy/backend?key="+k.ID+"&foo=bar", nil)
 			} else {
 				req.Header.Set("X-Virtual-Key", k.ID)
 			}
-			req.Header.Set("X-API-Key", u.APIKey)
-			req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 
@@ -102,8 +96,6 @@ func TestProxyScopeEnforcement(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			s := newTestServer()
-			u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-			s.UserStore.Create(u)
 
 			called := false
 			backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +112,7 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			if err := s.ServiceStore.Create(svc); err != nil {
 				t.Fatalf("seed service: %v", err)
 			}
-			k := keys.VirtualKey{ID: "vk-" + tc.name, Target: svc.ID, Scope: tc.scope, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
+			k := keys.VirtualKey{ID: "vk-" + tc.name, Target: svc.ID, Scope: tc.scope, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100}
 			if err := s.KeyStore.Create(k); err != nil {
 				t.Fatalf("seed key: %v", err)
 			}
@@ -128,8 +120,6 @@ func TestProxyScopeEnforcement(t *testing.T) {
 			router := setupRouter(s)
 			req := httptest.NewRequest(tc.method, "/v1/proxy/backend", nil)
 			req.Header.Set("X-Virtual-Key", k.ID)
-			req.Header.Set("X-API-Key", u.APIKey)
-			req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 			rr := httptest.NewRecorder()
 			router.ServeHTTP(rr, req)
 

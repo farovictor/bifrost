@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,6 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
@@ -25,8 +25,6 @@ func setupRouterRL(s *routes.Server) http.Handler {
 	}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(rl.AuthMiddleware(s.UserStore))
-		r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
 		r.With(rl.RateLimitMiddleware(s.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
 	})
 	return r
@@ -34,8 +32,6 @@ func setupRouterRL(s *routes.Server) http.Handler {
 
 func TestRateLimitExceeded(t *testing.T) {
 	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
 
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
@@ -50,7 +46,9 @@ func TestRateLimitExceeded(t *testing.T) {
 	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
-	k := keys.VirtualKey{ID: "lim", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
+	// Use a unique key ID per run so Redis counters from previous runs don't interfere.
+	keyID := fmt.Sprintf("lim-%d", time.Now().UnixNano())
+	k := keys.VirtualKey{ID: keyID, Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}
@@ -58,9 +56,7 @@ func TestRateLimitExceeded(t *testing.T) {
 	router := setupRouterRL(s)
 
 	req1 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
-	req1.Header.Set("X-Virtual-Key", k.ID)
-	req1.Header.Set("X-API-Key", u.APIKey)
-	req1.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	req1.Header.Set("X-Virtual-Key", keyID)
 	rr1 := httptest.NewRecorder()
 	router.ServeHTTP(rr1, req1)
 	if rr1.Code != http.StatusOK {
@@ -68,9 +64,7 @@ func TestRateLimitExceeded(t *testing.T) {
 	}
 
 	req2 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
-	req2.Header.Set("X-Virtual-Key", k.ID)
-	req2.Header.Set("X-API-Key", u.APIKey)
-	req2.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	req2.Header.Set("X-Virtual-Key", keyID)
 	rr2 := httptest.NewRecorder()
 	router.ServeHTTP(rr2, req2)
 	if rr2.Code != http.StatusTooManyRequests {
