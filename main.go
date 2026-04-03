@@ -140,6 +140,14 @@ func main() {
 			r.Post("/services", srv.CreateService)
 			r.Delete("/services/{id}", srv.DeleteService)
 
+			r.Get("/orgs", srv.ListOrgs)
+			r.Post("/orgs", srv.CreateOrg)
+			r.Get("/orgs/{id}", srv.GetOrg)
+			r.Delete("/orgs/{id}", srv.DeleteOrg)
+			r.Get("/orgs/{id}/members", srv.ListOrgMembers)
+			r.Post("/orgs/{id}/members", srv.AddOrgMember)
+			r.Delete("/orgs/{id}/members/{userID}", srv.RemoveOrgMember)
+
 			r.With(rl.RateLimitMiddleware(srv.KeyStore)).Post("/rate", v1.SayHello)
 		})
 	})

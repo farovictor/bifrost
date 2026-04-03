@@ -43,6 +43,14 @@ func setupRouter(s *routes.Server) http.Handler {
 			r.Get("/services", s.ListServices)
 			r.Post("/services", s.CreateService)
 			r.Delete("/services/{id}", s.DeleteService)
+
+			r.Get("/orgs", s.ListOrgs)
+			r.Post("/orgs", s.CreateOrg)
+			r.Get("/orgs/{id}", s.GetOrg)
+			r.Delete("/orgs/{id}", s.DeleteOrg)
+			r.Get("/orgs/{id}/members", s.ListOrgMembers)
+			r.Post("/orgs/{id}/members", s.AddOrgMember)
+			r.Delete("/orgs/{id}/members/{userID}", s.RemoveOrgMember)
 		})
 	})
 	return r
