@@ -67,4 +67,8 @@ When adding a new method to an interface, implement it on both `MemoryStore` and
 - **Phase 0** ✅ Server struct DI, proxy decoupled from auth, TestEnv helpers
 - **Phase 1** ✅ List endpoints, org/membership HTTP endpoints, JSON errors, configurable credential injection
 - **Phase 2** ✅ 77.6% test coverage, SQL store integration tests, middleware tests, error-path coverage
+- **Phase 2.5** ✅ Service update endpoint, token refresh, signing key hint, CI fix
 - **Phase 3** Vault backend, management dashboard, OPA, Kubernetes operator
+
+### Backlog (pre-Phase 3)
+- **Configurable token TTL** — `POST /v1/users` and `POST /v1/token/refresh` should accept an optional `ttl` field (e.g. `"1h"`); fall back to `BIFROST_TOKEN_TTL` env var (default `24h`). Needed for ephemeral setups that require very short-lived tokens.
