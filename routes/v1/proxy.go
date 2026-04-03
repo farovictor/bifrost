@@ -94,7 +94,7 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	prefix := "/v1/proxy"
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, prefix)
 
-	r.Header.Set("X-API-Key", rk.APIKey)
+	injectCredential(r, svc.CredentialHeader, rk.APIKey)
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.Host = target.Host
