@@ -47,6 +47,9 @@ func main() {
 	}
 
 	dsn := config.PostgresDSN()
+	if config.Mode() == "test" {
+		dsn = "" // test mode always uses in-memory stores
+	}
 	dbType := config.DBType()
 
 	var srv *routes.Server
