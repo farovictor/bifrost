@@ -15,6 +15,7 @@ type MembershipStore interface {
 	Update(Membership) error
 	List() []Membership
 	ListByUser(userID string) []Membership
+	ListByOrg(orgID string) []Membership
 }
 
 // SQLMembershipStore persists memberships in a SQL database and implements MembershipStore.
@@ -80,6 +81,15 @@ func (s *SQLMembershipStore) Update(m Membership) error {
 func (s *SQLMembershipStore) List() []Membership {
 	var out []Membership
 	if err := s.db.Find(&out).Error; err != nil {
+		return nil
+	}
+	return out
+}
+
+// ListByOrg returns memberships for a specific organization.
+func (s *SQLMembershipStore) ListByOrg(orgID string) []Membership {
+	var out []Membership
+	if err := s.db.Where("org_id = ?", orgID).Find(&out).Error; err != nil {
 		return nil
 	}
 	return out

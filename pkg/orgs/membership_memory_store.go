@@ -76,6 +76,19 @@ func (s *MemoryMembershipStore) List() []Membership {
 	return out
 }
 
+// ListByOrg returns memberships belonging to orgID.
+func (s *MemoryMembershipStore) ListByOrg(orgID string) []Membership {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]Membership, 0)
+	for _, m := range s.memberships {
+		if m.OrgID == orgID {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
 // ListByUser returns memberships belonging to userID.
 func (s *MemoryMembershipStore) ListByUser(userID string) []Membership {
 	s.mu.RLock()
