@@ -23,11 +23,11 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Role    string `json:"role"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if req.Name == "" || req.Email == "" {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
@@ -36,7 +36,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		role = orgs.RoleMember
 	}
 	if !orgs.ValidateRole(role) {
-		http.Error(w, "invalid role", http.StatusBadRequest)
+		writeError(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 
@@ -49,14 +49,14 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		if err := s.UserStore.Create(u); err != nil {
 			switch err {
 			case users.ErrUserExists:
-				http.Error(w, "user already exists", http.StatusConflict)
+				writeError(w, "user already exists", http.StatusConflict)
 			default:
-				http.Error(w, "internal error", http.StatusInternalServerError)
+				writeError(w, "internal error", http.StatusInternalServerError)
 			}
 			return
 		}
 	} else {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -64,17 +64,17 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if req.OrgName != "" && req.OrgID == "" {
 		o := orgs.Organization{ID: utils.GenerateID(), Name: req.OrgName}
 		if err := s.OrgStore.Create(o); err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 		orgID = o.ID
 	} else if req.OrgID != "" {
 		if _, err := s.OrgStore.Get(req.OrgID); err != nil {
 			if err == orgs.ErrOrgNotFound {
-				http.Error(w, "organization not found", http.StatusNotFound)
+				writeError(w, "organization not found", http.StatusNotFound)
 				return
 			}
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 		orgID = req.OrgID
@@ -85,24 +85,24 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		if len(existingMems) > 0 {
 			for _, mem := range existingMems {
 				if mem.OrgID == orgID {
-					http.Error(w, "user already exists", http.StatusConflict)
+					writeError(w, "user already exists", http.StatusConflict)
 					return
 				}
 			}
-			http.Error(w, "user already exists", http.StatusConflict)
+			writeError(w, "user already exists", http.StatusConflict)
 			return
 		}
 
 		m := orgs.Membership{UserID: u.ID, OrgID: orgID, Role: role}
 		if err := s.MembershipStore.Create(m); err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 	}
 
 	token, err := buildAuthToken(u.ID, orgID)
 	if err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
@@ -131,14 +131,14 @@ func (s *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 
 	if !strings.HasPrefix(authHeader, "Bearer ") {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	raw := strings.TrimPrefix(authHeader, "Bearer ")
 	tok, err := auth.Verify(raw)
 	if err != nil {
 		logging.Logger.Error().Err(err).Msg("token verification failed")
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -146,10 +146,10 @@ func (s *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == users.ErrUserNotFound {
 			logging.Logger.Warn().Str("user_id", tok.UserID).Msg("user not found")
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		} else {
 			logging.Logger.Error().Err(err).Str("user_id", tok.UserID).Msg("get user")
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}

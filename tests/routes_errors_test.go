@@ -24,8 +24,8 @@ func TestCreateKeyInvalidJSON(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "invalid request" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "invalid request" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -49,8 +49,8 @@ func TestCreateKeyDuplicate(t *testing.T) {
 	if rr.Code != http.StatusConflict {
 		t.Fatalf("expected status 409, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "key already exists" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "key already exists" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -64,8 +64,8 @@ func TestDeleteKeyNotFound(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "not found" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "not found" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -81,8 +81,8 @@ func TestCreateKeyMissingService(t *testing.T) {
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "service not found" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "service not found" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 	if _, err := env.Server.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
 		t.Fatalf("key should not have been created")
@@ -110,8 +110,8 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "invalid scope" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "invalid scope" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -136,8 +136,8 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "invalid scope" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "invalid scope" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestCreateKeyPastExpiration(t *testing.T) {
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "expires_at must be in the future" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "expires_at must be in the future" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }

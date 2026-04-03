@@ -76,7 +76,7 @@ func TestCreateUserDuplicateSameOrg(t *testing.T) {
 	if rr2.Code != http.StatusConflict {
 		t.Fatalf("expected status 409, got %d", rr2.Code)
 	}
-	if body := strings.TrimSpace(rr2.Body.String()); body != "user already exists" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr2); msg != "user already exists" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }

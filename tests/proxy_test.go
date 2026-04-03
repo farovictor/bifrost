@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -127,8 +126,8 @@ func TestProxyScopeEnforcement(t *testing.T) {
 				t.Fatalf("expected %d, got %d", tc.wantCode, rr.Code)
 			}
 			if tc.wantCode == http.StatusForbidden {
-				if body := strings.TrimSpace(rr.Body.String()); body != "insufficient scope" {
-					t.Fatalf("unexpected body: %s", body)
+				if msg := errorBody(t, rr); msg != "insufficient scope" {
+					t.Fatalf("unexpected error: %s", msg)
 				}
 				if called {
 					t.Fatalf("backend should not be called")

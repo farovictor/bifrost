@@ -15,23 +15,23 @@ import (
 func (s *Server) CreateService(w http.ResponseWriter, r *http.Request) {
 	var svc services.Service
 	if err := json.NewDecoder(r.Body).Decode(&svc); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if _, err := s.RootKeyStore.Get(svc.RootKeyID); err != nil {
 		if err == rootkeys.ErrKeyNotFound {
-			http.Error(w, "root key not found", http.StatusNotFound)
+			writeError(w, "root key not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if err := s.ServiceStore.Create(svc); err != nil {
 		switch err {
 		case services.ErrServiceExists:
-			http.Error(w, "service already exists", http.StatusConflict)
+			writeError(w, "service already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -53,9 +53,9 @@ func (s *Server) DeleteService(w http.ResponseWriter, r *http.Request) {
 	if err := s.ServiceStore.Delete(id); err != nil {
 		switch err {
 		case services.ErrServiceNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}

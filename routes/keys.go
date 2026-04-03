@@ -16,35 +16,35 @@ import (
 func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 	var k keys.VirtualKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if !keys.ValidateScope(k.Scope) {
-		http.Error(w, "invalid scope", http.StatusBadRequest)
+		writeError(w, "invalid scope", http.StatusBadRequest)
 		return
 	}
 	if k.RateLimit <= 0 {
-		http.Error(w, "invalid rate_limit", http.StatusBadRequest)
+		writeError(w, "invalid rate_limit", http.StatusBadRequest)
 		return
 	}
 	if !k.ExpiresAt.After(time.Now()) {
-		http.Error(w, "expires_at must be in the future", http.StatusBadRequest)
+		writeError(w, "expires_at must be in the future", http.StatusBadRequest)
 		return
 	}
 	if _, err := s.ServiceStore.Get(k.Target); err != nil {
 		if err == services.ErrServiceNotFound {
-			http.Error(w, "service not found", http.StatusNotFound)
+			writeError(w, "service not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	if err := s.KeyStore.Create(k); err != nil {
 		switch err {
 		case keys.ErrKeyExists:
-			http.Error(w, "key already exists", http.StatusConflict)
+			writeError(w, "key already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -66,9 +66,9 @@ func (s *Server) DeleteKey(w http.ResponseWriter, r *http.Request) {
 	if err := s.KeyStore.Delete(id); err != nil {
 		switch err {
 		case keys.ErrKeyNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
