@@ -35,6 +35,7 @@ go tool cover -html=coverage.out
 
 | Document | Description |
 |---|---|
+| [doc/getting-started.md](doc/getting-started.md) | Step-by-step tutorial — run a server and make your first proxied request |
 | [doc/api.md](doc/api.md) | Full HTTP API reference — endpoints, auth, request/response formats |
 | [doc/cli.md](doc/cli.md) | CLI commands and end-to-end usage example |
 | [doc/configuration.md](doc/configuration.md) | Environment variables, database backends, Docker Compose |
