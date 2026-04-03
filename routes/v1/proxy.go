@@ -12,12 +12,11 @@ import (
 	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 // Proxy forwards the request to the target service determined by the provided
 // virtual key. The key should be supplied via the X-Virtual-Key header.
-func Proxy(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	keyID := r.Header.Get("X-Virtual-Key")
 	r.Header.Del("X-Virtual-Key")
 	if keyID == "" {
@@ -33,7 +32,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	k, err := routes.KeyStore.Get(keyID)
+	k, err := h.KeyStore.Get(keyID)
 	if err != nil {
 		if err == keys.ErrKeyNotFound {
 			http.Error(w, "invalid key", http.StatusUnauthorized)
@@ -65,7 +64,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := routes.ServiceStore.Get(k.Target)
+	svc, err := h.ServiceStore.Get(k.Target)
 	if err != nil {
 		if err == services.ErrServiceNotFound {
 			http.Error(w, "service not found", http.StatusNotFound)
@@ -75,7 +74,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rk, err := routes.RootKeyStore.Get(svc.RootKeyID)
+	rk, err := h.RootKeyStore.Get(svc.RootKeyID)
 	if err != nil {
 		if err == rootkeys.ErrKeyNotFound {
 			http.Error(w, "root key not found", http.StatusInternalServerError)

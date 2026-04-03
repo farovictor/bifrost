@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/farovictor/bifrost/config"
-	routes "github.com/farovictor/bifrost/routes"
+	"github.com/farovictor/bifrost/pkg/users"
 )
 
 // AuthMiddleware validates the API key provided by the client.
 //
 // In test or sqlite modes, authentication is performed using the static API
 // key from config.StaticAPIKey(), and user lookups are skipped.
-func AuthMiddleware() func(http.Handler) http.Handler {
+func AuthMiddleware(store users.Store) func(http.Handler) http.Handler {
 	bypass := config.Mode() == "test" || config.DBType() == "sqlite"
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +38,7 @@ func AuthMiddleware() func(http.Handler) http.Handler {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
-			if _, err := routes.UserStore.GetByAPIKey(key); err != nil {
+			if _, err := store.GetByAPIKey(key); err != nil {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}

@@ -18,13 +18,13 @@ import (
 	routes "github.com/farovictor/bifrost/routes"
 )
 
-func setupOrgCtxRouter() http.Handler {
+func setupOrgCtxRouter(s *routes.Server) http.Handler {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
+		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/users", s.CreateUser)
 		r.Group(func(r chi.Router) {
-			r.Use(rl.AuthMiddleware())
-			r.Use(rl.OrgCtxMiddleware())
+			r.Use(rl.AuthMiddleware(s.UserStore))
+			r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
 			r.Get("/ctx", func(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(rl.OrgFromContext(r.Context()))
 			})
@@ -33,11 +33,11 @@ func setupOrgCtxRouter() http.Handler {
 	return r
 }
 
-func setupCtxRouter() http.Handler {
+func setupCtxRouter(s *routes.Server) http.Handler {
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(rl.AuthMiddleware())
-		r.Use(rl.OrgCtxMiddleware())
+		r.Use(rl.AuthMiddleware(s.UserStore))
+		r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
 		r.Get("/ctx", func(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(rl.OrgFromContext(r.Context()))
 		})
@@ -58,18 +58,16 @@ func TestUserCreationOrgContext(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			routes.UserStore = users.NewMemoryStore()
-			routes.OrgStore = orgs.NewMemoryStore()
-			routes.MembershipStore = orgs.NewMemoryMembershipStore()
+			s := newTestServer()
 
 			admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "admink"}
-			routes.UserStore.Create(admin)
+			s.UserStore.Create(admin)
 
 			if tc.orgID != "" {
-				routes.OrgStore.Create(orgs.Organization{ID: tc.orgID, Name: "Existing Org", Domain: "example.com", Email: "org@example.com"})
+				s.OrgStore.Create(orgs.Organization{ID: tc.orgID, Name: "Existing Org", Domain: "example.com", Email: "org@example.com"})
 			}
 
-			router := setupOrgCtxRouter()
+			router := setupOrgCtxRouter(s)
 
 			payload := map[string]string{"name": "New", "email": "new@example.com"}
 			if tc.orgName != "" {
@@ -105,7 +103,7 @@ func TestUserCreationOrgContext(t *testing.T) {
 				t.Fatalf("verify token: %v", err)
 			}
 
-			org, err := routes.OrgStore.Get(tok.OrgID)
+			org, err := s.OrgStore.Get(tok.OrgID)
 			if err != nil {
 				t.Fatalf("org not stored: %v", err)
 			}
@@ -116,7 +114,7 @@ func TestUserCreationOrgContext(t *testing.T) {
 				t.Fatalf("unexpected org id %s", org.ID)
 			}
 
-			mem, err := routes.MembershipStore.Get(resp.ID, tok.OrgID)
+			mem, err := s.MembershipStore.Get(resp.ID, tok.OrgID)
 			if err != nil {
 				t.Fatalf("membership: %v", err)
 			}
@@ -176,13 +174,11 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			routes.UserStore = users.NewMemoryStore()
-			routes.OrgStore = orgs.NewMemoryStore()
-			routes.MembershipStore = orgs.NewMemoryMembershipStore()
-			routes.UserStore.Create(u)
-			routes.OrgStore.Create(o)
+			s := newTestServer()
+			s.UserStore.Create(u)
+			s.OrgStore.Create(o)
 
-			router := setupCtxRouter()
+			router := setupCtxRouter(s)
 
 			req := httptest.NewRequest(http.MethodGet, "/v1/ctx", nil)
 			req.Header.Set("X-API-Key", u.APIKey)

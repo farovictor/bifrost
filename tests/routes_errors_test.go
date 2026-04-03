@@ -13,15 +13,13 @@ import (
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateKeyInvalidJSON(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	s.UserStore.Create(u)
+	router := setupRouter(s)
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader("{bad"))
 	req.Header.Set("X-API-Key", u.APIKey)
@@ -39,22 +37,20 @@ func TestCreateKeyInvalidJSON(t *testing.T) {
 }
 
 func TestCreateKeyDuplicate(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: "rk"}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
 	k := keys.VirtualKey{ID: "dup", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
-	if err := routes.KeyStore.Create(k); err != nil {
+	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
 
 	body, _ := json.Marshal(k)
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
 	req.Header.Set("X-API-Key", u.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
@@ -71,11 +67,10 @@ func TestCreateKeyDuplicate(t *testing.T) {
 }
 
 func TestDeleteKeyNotFound(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	s.UserStore.Create(u)
+	router := setupRouter(s)
 
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/unknown", nil)
 	req.Header.Set("X-API-Key", u.APIKey)
@@ -93,12 +88,10 @@ func TestDeleteKeyNotFound(t *testing.T) {
 }
 
 func TestCreateKeyMissingService(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	s.UserStore.Create(u)
+	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "nosvc", Scope: "read", Target: "missing", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
@@ -116,27 +109,24 @@ func TestCreateKeyMissingService(t *testing.T) {
 		t.Fatalf("unexpected body: %s", body)
 	}
 
-	if _, err := routes.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
+	if _, err := s.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
 		t.Fatalf("key should not have been created")
 	}
 }
 
 func TestCreateKeyInvalidScope(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-scope", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-scope", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "badscope", Scope: "unknown", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
@@ -155,21 +145,18 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 }
 
 func TestCreateKeyEmptyScope(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-empty", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-empty", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "emptyscope", Scope: "", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
@@ -188,21 +175,18 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 }
 
 func TestCreateKeyPastExpiration(t *testing.T) {
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk-exp", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-exp", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "expired", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)

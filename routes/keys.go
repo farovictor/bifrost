@@ -12,11 +12,8 @@ import (
 	"github.com/farovictor/bifrost/pkg/services"
 )
 
-// KeyStore provides access to virtual keys.
-var KeyStore keys.Store
-
 // CreateKey handles POST /keys and stores a new VirtualKey.
-func CreateKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 	var k keys.VirtualKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
@@ -34,7 +31,7 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "expires_at must be in the future", http.StatusBadRequest)
 		return
 	}
-	if _, err := ServiceStore.Get(k.Target); err != nil {
+	if _, err := s.ServiceStore.Get(k.Target); err != nil {
 		if err == services.ErrServiceNotFound {
 			http.Error(w, "service not found", http.StatusNotFound)
 			return
@@ -42,7 +39,7 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if err := KeyStore.Create(k); err != nil {
+	if err := s.KeyStore.Create(k); err != nil {
 		switch err {
 		case keys.ErrKeyExists:
 			http.Error(w, "key already exists", http.StatusConflict)
@@ -58,9 +55,9 @@ func CreateKey(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteKey handles DELETE /keys/{id} and removes a VirtualKey.
-func DeleteKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := KeyStore.Delete(id); err != nil {
+	if err := s.KeyStore.Delete(id); err != nil {
 		switch err {
 		case keys.ErrKeyNotFound:
 			http.Error(w, "not found", http.StatusNotFound)

@@ -8,22 +8,19 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestGetUserInfo(t *testing.T) {
-	routes.UserStore = users.NewMemoryStore()
-	routes.OrgStore = orgs.NewMemoryStore()
-	routes.MembershipStore = orgs.NewMemoryMembershipStore()
+	s := newTestServer()
 
 	u := users.User{ID: "u1", Name: "User", Email: "u@example.com", APIKey: "key"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
 	o := orgs.Organization{ID: "o1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
-	routes.OrgStore.Create(o)
-	routes.MembershipStore.Create(orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: orgs.RoleOwner})
+	s.OrgStore.Create(o)
+	s.MembershipStore.Create(orgs.Membership{UserID: u.ID, OrgID: o.ID, Role: orgs.RoleOwner})
 
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodGet, "/v1/user", nil)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
 	rr := httptest.NewRecorder()

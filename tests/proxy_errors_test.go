@@ -12,18 +12,14 @@ import (
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestProxyMissingKey(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-API-Key", u.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
@@ -39,14 +35,11 @@ func TestProxyMissingKey(t *testing.T) {
 }
 
 func TestProxyInvalidKey(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", "bad")
 	req.Header.Set("X-API-Key", u.APIKey)
@@ -63,19 +56,16 @@ func TestProxyInvalidKey(t *testing.T) {
 }
 
 func TestProxyExpiredKey(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
 	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
-	if err := routes.KeyStore.Create(k); err != nil {
+	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}
 
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
 	req.Header.Set("X-API-Key", u.APIKey)
@@ -92,12 +82,9 @@ func TestProxyExpiredKey(t *testing.T) {
 }
 
 func TestProxyScopeViolation(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
 	called := false
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -107,19 +94,19 @@ func TestProxyScopeViolation(t *testing.T) {
 	defer backend.Close()
 
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "real"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc", Endpoint: backend.URL, RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
 	k := keys.VirtualKey{ID: "vkey", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
-	if err := routes.KeyStore.Create(k); err != nil {
+	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}
 
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodPost, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", k.ID)
 	req.Header.Set("X-API-Key", u.APIKey)

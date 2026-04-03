@@ -11,18 +11,14 @@ import (
 	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateUserReturnsToken(t *testing.T) {
-	routes.UserStore = users.NewMemoryStore()
-	routes.OrgStore = orgs.NewMemoryStore()
-	routes.MembershipStore = orgs.NewMemoryMembershipStore()
-
+	s := newTestServer()
 	admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "secret"}
-	routes.UserStore.Create(admin)
+	s.UserStore.Create(admin)
 
-	router := setupRouter()
+	router := setupRouter(s)
 
 	payload := `{"name":"New User","email":"new@example.com"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))
@@ -62,18 +58,16 @@ func TestCreateUserReturnsToken(t *testing.T) {
 		t.Fatalf("unexpected expiry")
 	}
 }
-func TestCreateUserDuplicateSameOrg(t *testing.T) {
-	routes.UserStore = users.NewMemoryStore()
-	routes.OrgStore = orgs.NewMemoryStore()
-	routes.MembershipStore = orgs.NewMemoryMembershipStore()
 
+func TestCreateUserDuplicateSameOrg(t *testing.T) {
+	s := newTestServer()
 	admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "secret"}
-	routes.UserStore.Create(admin)
+	s.UserStore.Create(admin)
 
 	org := orgs.Organization{ID: "org1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
-	routes.OrgStore.Create(org)
+	s.OrgStore.Create(org)
 
-	router := setupRouter()
+	router := setupRouter(s)
 
 	payload := `{"name":"User","email":"dup@example.com","org_id":"org1"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(payload))

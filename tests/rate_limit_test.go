@@ -17,23 +17,25 @@ import (
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
 
-func setupRouterRL() http.Handler {
+func setupRouterRL(s *routes.Server) http.Handler {
+	v1h := &v1.Handler{
+		KeyStore:     s.KeyStore,
+		ServiceStore: s.ServiceStore,
+		RootKeyStore: s.RootKeyStore,
+	}
 	r := chi.NewRouter()
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(rl.AuthMiddleware())
-		r.Use(rl.OrgCtxMiddleware())
-		r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+		r.Use(rl.AuthMiddleware(s.UserStore))
+		r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
+		r.With(rl.RateLimitMiddleware(s.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
 	})
 	return r
 }
 
 func TestRateLimitExceeded(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.KeyStore = keys.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))
@@ -41,19 +43,19 @@ func TestRateLimitExceeded(t *testing.T) {
 	defer backend.Close()
 
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "real"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc", Endpoint: backend.URL, RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("seed service: %v", err)
 	}
 	k := keys.VirtualKey{ID: "lim", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
-	if err := routes.KeyStore.Create(k); err != nil {
+	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
 	}
 
-	router := setupRouterRL()
+	router := setupRouterRL(s)
 
 	req1 := httptest.NewRequest(http.MethodGet, "/v1/proxy/test", nil)
 	req1.Header.Set("X-Virtual-Key", k.ID)
