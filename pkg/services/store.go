@@ -13,6 +13,7 @@ import (
 type Store interface {
 	Create(Service) error
 	Get(id string) (Service, error)
+	Update(Service) error
 	Delete(id string) error
 	List() []Service
 }
@@ -61,6 +62,17 @@ func (s *MemoryStore) Get(id string) (Service, error) {
 	return svc, nil
 }
 
+// Update replaces a Service.
+func (s *MemoryStore) Update(svc Service) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.services[svc.ID]; !ok {
+		return ErrServiceNotFound
+	}
+	s.services[svc.ID] = svc
+	return nil
+}
+
 // Delete removes a Service.
 func (s *MemoryStore) Delete(id string) error {
 	s.mu.Lock()
@@ -104,6 +116,18 @@ func (s *SQLStore) Get(id string) (Service, error) {
 		return Service{}, err
 	}
 	return svc, nil
+}
+
+// Update replaces a service.
+func (s *SQLStore) Update(svc Service) error {
+	res := s.db.Where("id = ?", svc.ID).Updates(&svc)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrServiceNotFound
+	}
+	return nil
 }
 
 // Delete removes a service.

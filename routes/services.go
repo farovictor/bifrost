@@ -47,6 +47,42 @@ func (s *Server) ListServices(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.ServiceStore.List())
 }
 
+// UpdateService handles PUT /services/{id} to replace a service.
+func (s *Server) UpdateService(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var svc services.Service
+	if err := json.NewDecoder(r.Body).Decode(&svc); err != nil {
+		writeError(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	if svc.ID != id {
+		writeError(w, "id mismatch", http.StatusBadRequest)
+		return
+	}
+	if svc.RootKeyID != "" {
+		if _, err := s.RootKeyStore.Get(svc.RootKeyID); err != nil {
+			if err == rootkeys.ErrKeyNotFound {
+				writeError(w, "root key not found", http.StatusNotFound)
+				return
+			}
+			writeError(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := s.ServiceStore.Update(svc); err != nil {
+		switch err {
+		case services.ErrServiceNotFound:
+			writeError(w, "not found", http.StatusNotFound)
+		default:
+			writeError(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	logging.Logger.Info().Str("service_id", id).Msg("updated service")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(svc)
+}
+
 // DeleteService handles DELETE /services/{id} to remove a service.
 func (s *Server) DeleteService(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

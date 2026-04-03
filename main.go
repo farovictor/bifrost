@@ -119,6 +119,7 @@ func main() {
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/users", srv.CreateUser)
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Get("/user", srv.GetUserInfo)
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/user/rootkeys", srv.CreateRootKey)
+		r.Post("/token/refresh", srv.RefreshToken)
 
 		// Proxy - authenticated by the virtual key; no API key or token required
 		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
@@ -141,6 +142,7 @@ func main() {
 
 			r.Get("/services", srv.ListServices)
 			r.Post("/services", srv.CreateService)
+			r.Put("/services/{id}", srv.UpdateService)
 			r.Delete("/services/{id}", srv.DeleteService)
 
 			r.Get("/orgs", srv.ListOrgs)
