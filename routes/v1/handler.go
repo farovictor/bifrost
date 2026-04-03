@@ -9,6 +9,21 @@ import (
 	"github.com/farovictor/bifrost/pkg/services"
 )
 
+// injectCredential sets the appropriate header on r based on credentialHeader.
+// "" or "X-API-Key" → X-API-Key: <apiKey>
+// "Authorization"   → Authorization: Bearer <apiKey>
+// anything else     → <credentialHeader>: <apiKey>
+func injectCredential(r *http.Request, credentialHeader, apiKey string) {
+	switch credentialHeader {
+	case "", services.CredentialHeaderXAPIKey:
+		r.Header.Set(services.CredentialHeaderXAPIKey, apiKey)
+	case services.CredentialHeaderBearer:
+		r.Header.Set("Authorization", "Bearer "+apiKey)
+	default:
+		r.Header.Set(credentialHeader, apiKey)
+	}
+}
+
 // Handler holds store dependencies for v1 route handlers.
 type Handler struct {
 	KeyStore     keys.Store
