@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   keys.VirtualKey:
     properties:
@@ -56,9 +57,41 @@ definitions:
       root_key_id:
         type: string
     type: object
+host: localhost:3333
 info:
-  contact: {}
+  contact:
+    name: Bifrost
+  description: Secure, delegated API access proxy. Maps short-lived virtual keys to
+    real credentials and transparently proxies requests to upstream services.
+  license:
+    name: MIT
+  title: Bifrost API
+  version: "1.0"
 paths:
+  /docs/openapi.json:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+      summary: OpenAPI spec (JSON)
+      tags:
+      - health
+  /docs/openapi.yaml:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: OpenAPI spec (YAML)
+      tags:
+      - health
   /healthz:
     get:
       produces:
@@ -721,4 +754,16 @@ paths:
       summary: Get version
       tags:
       - health
+securityDefinitions:
+  ApiKeyAuth:
+    description: User API key. Required together with BearerAuth for most management
+      endpoints.
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerAuth:
+    description: 'Bearer token. Format: "Bearer <token>"'
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

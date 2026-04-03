@@ -1,9 +1,57 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Secure, delegated API access proxy. Maps short-lived virtual keys to real credentials and transparently proxies requests to upstream services.",
+        "title": "Bifrost API",
+        "contact": {
+            "name": "Bifrost"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0"
     },
+    "host": "localhost:3333",
+    "basePath": "/",
     "paths": {
+        "/docs/openapi.json": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "OpenAPI spec (JSON)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs/openapi.yaml": {
+            "get": {
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "OpenAPI spec (YAML)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "produces": [
@@ -1172,6 +1220,20 @@
                     "type": "string"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "description": "User API key. Required together with BearerAuth for most management endpoints.",
+            "type": "apiKey",
+            "name": "X-API-Key",
+            "in": "header"
+        },
+        "BearerAuth": {
+            "description": "Bearer token. Format: \"Bearer \u003ctoken\u003e\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

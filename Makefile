@@ -25,7 +25,7 @@ test:
 
 # swagger: regenerate OpenAPI spec from handler annotations
 swagger:
-	swag init --parseDependency --parseInternal -o docs/swagger
+	swag init -g docs.go --parseDependency --parseInternal -o docs/swagger
 
 # compose-up: start Docker Compose environment
 compose-up:
