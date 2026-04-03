@@ -28,22 +28,22 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if keyID == "" {
-		http.Error(w, "missing key", http.StatusUnauthorized)
+		writeError(w, "missing key", http.StatusUnauthorized)
 		return
 	}
 
 	k, err := h.KeyStore.Get(keyID)
 	if err != nil {
 		if err == keys.ErrKeyNotFound {
-			http.Error(w, "invalid key", http.StatusUnauthorized)
+			writeError(w, "invalid key", http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if time.Now().After(k.ExpiresAt) {
-		http.Error(w, "key expired", http.StatusUnauthorized)
+		writeError(w, "key expired", http.StatusUnauthorized)
 		return
 	}
 
@@ -54,39 +54,39 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	switch k.Scope {
 	case keys.ScopeRead:
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			http.Error(w, "insufficient scope", http.StatusForbidden)
+			writeError(w, "insufficient scope", http.StatusForbidden)
 			return
 		}
 	case keys.ScopeWrite:
 		// write scope allows all methods
 	default:
-		http.Error(w, "insufficient scope", http.StatusForbidden)
+		writeError(w, "insufficient scope", http.StatusForbidden)
 		return
 	}
 
 	svc, err := h.ServiceStore.Get(k.Target)
 	if err != nil {
 		if err == services.ErrServiceNotFound {
-			http.Error(w, "service not found", http.StatusNotFound)
+			writeError(w, "service not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	rk, err := h.RootKeyStore.Get(svc.RootKeyID)
 	if err != nil {
 		if err == rootkeys.ErrKeyNotFound {
-			http.Error(w, "root key not found", http.StatusInternalServerError)
+			writeError(w, "root key not found", http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	target, err := url.Parse(svc.Endpoint)
 	if err != nil {
-		http.Error(w, "bad service endpoint", http.StatusInternalServerError)
+		writeError(w, "bad service endpoint", http.StatusInternalServerError)
 		return
 	}
 

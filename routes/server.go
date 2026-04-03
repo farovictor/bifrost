@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
@@ -16,4 +19,13 @@ type Server struct {
 	ServiceStore    services.Store
 	OrgStore        orgs.Store
 	MembershipStore orgs.MembershipStore
+}
+
+// writeError writes a JSON {"error":"..."} response with the given status code.
+func writeError(w http.ResponseWriter, message string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(struct {
+		Error string `json:"error"`
+	}{Error: message})
 }

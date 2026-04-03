@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
@@ -11,4 +14,12 @@ type Handler struct {
 	KeyStore     keys.Store
 	ServiceStore services.Store
 	RootKeyStore rootkeys.Store
+}
+
+func writeError(w http.ResponseWriter, message string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(struct {
+		Error string `json:"error"`
+	}{Error: message})
 }

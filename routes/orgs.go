@@ -15,11 +15,11 @@ import (
 func (s *Server) CreateOrg(w http.ResponseWriter, r *http.Request) {
 	var o orgs.Organization
 	if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if o.Name == "" {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if o.ID == "" {
@@ -28,9 +28,9 @@ func (s *Server) CreateOrg(w http.ResponseWriter, r *http.Request) {
 	if err := s.OrgStore.Create(o); err != nil {
 		switch err {
 		case orgs.ErrOrgExists:
-			http.Error(w, "organization already exists", http.StatusConflict)
+			writeError(w, "organization already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -53,9 +53,9 @@ func (s *Server) GetOrg(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case orgs.ErrOrgNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -69,9 +69,9 @@ func (s *Server) DeleteOrg(w http.ResponseWriter, r *http.Request) {
 	if err := s.OrgStore.Delete(id); err != nil {
 		switch err {
 		case orgs.ErrOrgNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -84,10 +84,10 @@ func (s *Server) ListOrgMembers(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if _, err := s.OrgStore.Get(id); err != nil {
 		if err == orgs.ErrOrgNotFound {
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -99,20 +99,20 @@ func (s *Server) AddOrgMember(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "id")
 	if _, err := s.OrgStore.Get(orgID); err != nil {
 		if err == orgs.ErrOrgNotFound {
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	var m orgs.Membership
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if m.UserID == "" {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	m.OrgID = orgID
@@ -120,16 +120,16 @@ func (s *Server) AddOrgMember(w http.ResponseWriter, r *http.Request) {
 		m.Role = orgs.RoleMember
 	}
 	if !orgs.ValidateRole(m.Role) {
-		http.Error(w, "invalid role", http.StatusBadRequest)
+		writeError(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 
 	if err := s.MembershipStore.Create(m); err != nil {
 		switch err {
 		case orgs.ErrMembershipExists:
-			http.Error(w, "membership already exists", http.StatusConflict)
+			writeError(w, "membership already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -146,9 +146,9 @@ func (s *Server) RemoveOrgMember(w http.ResponseWriter, r *http.Request) {
 	if err := s.MembershipStore.Delete(userID, orgID); err != nil {
 		switch err {
 		case orgs.ErrMembershipNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}

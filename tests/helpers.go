@@ -1,7 +1,9 @@
 package tests
 
 import (
+	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/farovictor/bifrost/pkg/keys"
@@ -38,6 +40,18 @@ type TestEnv struct {
 func (e *TestEnv) Authorize(req *http.Request) {
 	req.Header.Set("X-API-Key", e.User.APIKey)
 	req.Header.Set("Authorization", "Bearer "+e.Token)
+}
+
+// errorBody decodes a JSON {"error":"..."} response body and returns the message.
+func errorBody(t *testing.T, rr *httptest.ResponseRecorder) string {
+	t.Helper()
+	var resp struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error body: %v (raw: %s)", err, rr.Body.String())
+	}
+	return resp.Error
 }
 
 // newTestEnv creates a TestEnv with a default user already seeded.

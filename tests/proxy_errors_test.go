@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -22,8 +21,8 @@ func TestProxyMissingKey(t *testing.T) {
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "missing key" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "missing key" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -37,8 +36,8 @@ func TestProxyInvalidKey(t *testing.T) {
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "invalid key" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "invalid key" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -58,8 +57,8 @@ func TestProxyExpiredKey(t *testing.T) {
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "key expired" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "key expired" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 }
 
@@ -95,8 +94,8 @@ func TestProxyScopeViolation(t *testing.T) {
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("expected 403, got %d", rr.Code)
 	}
-	if body := strings.TrimSpace(rr.Body.String()); body != "insufficient scope" {
-		t.Fatalf("unexpected body: %s", body)
+	if msg := errorBody(t, rr); msg != "insufficient scope" {
+		t.Fatalf("unexpected error: %s", msg)
 	}
 	if called {
 		t.Fatalf("backend should not be called")

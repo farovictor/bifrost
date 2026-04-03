@@ -14,15 +14,15 @@ import (
 func (s *Server) CreateRootKey(w http.ResponseWriter, r *http.Request) {
 	var k rootkeys.RootKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if err := s.RootKeyStore.Create(k); err != nil {
 		switch err {
 		case rootkeys.ErrKeyExists:
-			http.Error(w, "root key already exists", http.StatusConflict)
+			writeError(w, "root key already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -44,9 +44,9 @@ func (s *Server) DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 	if err := s.RootKeyStore.Delete(id); err != nil {
 		switch err {
 		case rootkeys.ErrKeyNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -59,21 +59,21 @@ func (s *Server) UpdateRootKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var k rootkeys.RootKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 	if k.ID == "" {
 		k.ID = id
 	} else if k.ID != id {
-		http.Error(w, "id mismatch", http.StatusBadRequest)
+		writeError(w, "id mismatch", http.StatusBadRequest)
 		return
 	}
 	if err := s.RootKeyStore.Update(k); err != nil {
 		switch err {
 		case rootkeys.ErrKeyNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
