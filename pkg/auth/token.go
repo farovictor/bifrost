@@ -50,12 +50,16 @@ func loadKey() ([]byte, error) {
 	return b, nil
 }
 
-// generateKey creates a new random signing key.
+// generateKey creates a new random signing key and logs it so the operator
+// can persist it via BIFROST_SIGNING_KEY for token continuity across restarts.
 func generateKey() ([]byte, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return nil, err
 	}
+	logging.Logger.Warn().
+		Str("BIFROST_SIGNING_KEY", base64.StdEncoding.EncodeToString(b)).
+		Msg("set BIFROST_SIGNING_KEY to preserve tokens across restarts")
 	return b, nil
 }
 

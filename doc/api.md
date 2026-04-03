@@ -30,6 +30,7 @@ In `test` mode or SQLite mode, any bearer token is accepted and `BIFROST_STATIC_
 |---|---|---|---|
 | `POST` | `/v1/users` | Bearer token | Create user, optionally with org |
 | `GET` | `/v1/user` | Bearer token | Get authenticated user info + orgs |
+| `POST` | `/v1/token/refresh` | Bearer token | Issue a fresh 24h token |
 
 **POST /v1/users** body:
 ```json
@@ -90,6 +91,7 @@ All org endpoints require API key + bearer token.
 |---|---|---|---|
 | `GET` | `/v1/services` | API key + token | List services |
 | `POST` | `/v1/services` | API key + token | Create service |
+| `PUT` | `/v1/services/{id}` | API key + token | Update service |
 | `DELETE` | `/v1/services/{id}` | API key + token | Delete service |
 
 **POST /v1/services** body:

@@ -117,6 +117,30 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// RefreshToken handles POST /token/refresh and issues a fresh 24h token.
+func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") {
+		writeError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	raw := strings.TrimPrefix(authHeader, "Bearer ")
+	tok, err := auth.Verify(raw)
+	if err != nil {
+		writeError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	token, err := buildAuthToken(tok.UserID, tok.OrgID)
+	if err != nil {
+		writeError(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct {
+		Token string `json:"token"`
+	}{Token: token})
+}
+
 func buildAuthToken(userID, orgID string) (string, error) {
 	t := auth.AuthToken{
 		UserID:    userID,
