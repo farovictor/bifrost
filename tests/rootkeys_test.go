@@ -9,15 +9,13 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateRootKey(t *testing.T) {
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	s.UserStore.Create(u)
+	router := setupRouter(s)
 
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "secret"}
 	body, _ := json.Marshal(rk)
@@ -41,15 +39,14 @@ func TestCreateRootKey(t *testing.T) {
 }
 
 func TestDeleteRootKey(t *testing.T) {
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "dead", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodDelete, "/v1/rootkeys/"+rk.ID, nil)
 	req.Header.Set("X-API-Key", u.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
@@ -59,21 +56,20 @@ func TestDeleteRootKey(t *testing.T) {
 	if rr.Code != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", rr.Code)
 	}
-	if _, err := routes.RootKeyStore.Get(rk.ID); err != rootkeys.ErrKeyNotFound {
+	if _, err := s.RootKeyStore.Get(rk.ID); err != rootkeys.ErrKeyNotFound {
 		t.Fatalf("root key was not deleted")
 	}
 }
 
 func TestUpdateRootKey(t *testing.T) {
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	orig := rootkeys.RootKey{ID: "rk", APIKey: "old"}
-	if err := routes.RootKeyStore.Create(orig); err != nil {
+	if err := s.RootKeyStore.Create(orig); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 
 	updated := rootkeys.RootKey{ID: "rk", APIKey: "new"}
 	body, _ := json.Marshal(updated)
@@ -86,7 +82,7 @@ func TestUpdateRootKey(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-	rk, err := routes.RootKeyStore.Get(orig.ID)
+	rk, err := s.RootKeyStore.Get(orig.ID)
 	if err != nil {
 		t.Fatalf("get rootkey: %v", err)
 	}
@@ -96,11 +92,10 @@ func TestUpdateRootKey(t *testing.T) {
 }
 
 func TestCreateRootKeyWithBearer(t *testing.T) {
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u2", Name: "U", Email: "u2@example.com", APIKey: "key"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	s.UserStore.Create(u)
+	router := setupRouter(s)
 
 	rk := rootkeys.RootKey{ID: "rk2", APIKey: "secret"}
 	body, _ := json.Marshal(rk)
@@ -113,14 +108,14 @@ func TestCreateRootKeyWithBearer(t *testing.T) {
 		t.Fatalf("expected status 201, got %d", rr.Code)
 	}
 
-	if _, err := routes.RootKeyStore.Get(rk.ID); err != nil {
+	if _, err := s.RootKeyStore.Get(rk.ID); err != nil {
 		t.Fatalf("root key not stored: %v", err)
 	}
 }
 
 func TestCreateRootKeyWithBearerUnauthorized(t *testing.T) {
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	router := setupRouter()
+	s := newTestServer()
+	router := setupRouter(s)
 	rk := rootkeys.RootKey{ID: "rk3", APIKey: "secret"}
 	body, _ := json.Marshal(rk)
 	req := httptest.NewRequest(http.MethodPost, "/v1/user/rootkeys", bytes.NewReader(body))

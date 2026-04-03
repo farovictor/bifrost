@@ -10,20 +10,17 @@ import (
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/users"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 func TestCreateService(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: rk.ID}
 	body, _ := json.Marshal(svc)
@@ -47,20 +44,18 @@ func TestCreateService(t *testing.T) {
 }
 
 func TestDeleteService(t *testing.T) {
-	routes.ServiceStore = services.NewMemoryStore()
-	routes.RootKeyStore = rootkeys.NewMemoryStore()
-	routes.UserStore = users.NewMemoryStore()
+	s := newTestServer()
 	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
+	s.UserStore.Create(u)
 	rk := rootkeys.RootKey{ID: "rkdead", APIKey: "k"}
-	if err := routes.RootKeyStore.Create(rk); err != nil {
+	if err := s.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "dead", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := routes.ServiceStore.Create(svc); err != nil {
+	if err := s.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
-	router := setupRouter()
+	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodDelete, "/v1/services/"+svc.ID, nil)
 	req.Header.Set("X-API-Key", u.APIKey)
 	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
@@ -70,7 +65,7 @@ func TestDeleteService(t *testing.T) {
 	if rr.Code != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", rr.Code)
 	}
-	if _, err := routes.ServiceStore.Get(svc.ID); err != services.ErrServiceNotFound {
+	if _, err := s.ServiceStore.Get(svc.ID); err != services.ErrServiceNotFound {
 		t.Fatalf("service was not deleted")
 	}
 }

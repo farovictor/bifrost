@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/farovictor/bifrost/config"
-	routes "github.com/farovictor/bifrost/routes"
+	"github.com/farovictor/bifrost/pkg/keys"
 	redis "github.com/redis/go-redis/v9"
 )
 
@@ -45,7 +45,7 @@ func (l *localCounter) incr(key string) int {
 	return e.count
 }
 
-func RateLimitMiddleware() func(http.Handler) http.Handler {
+func RateLimitMiddleware(ks keys.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -58,7 +58,7 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 				return
 			}
 
-			vk, err := routes.KeyStore.Get(keyID)
+			vk, err := ks.Get(keyID)
 			if err != nil {
 				next.ServeHTTP(w, r)
 				return
