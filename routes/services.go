@@ -41,6 +41,12 @@ func (s *Server) CreateService(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(svc)
 }
 
+// ListServices handles GET /services and returns all services.
+func (s *Server) ListServices(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.ServiceStore.List())
+}
+
 // DeleteService handles DELETE /services/{id} to remove a service.
 func (s *Server) DeleteService(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

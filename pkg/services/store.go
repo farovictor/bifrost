@@ -12,6 +12,7 @@ type Store interface {
 	Create(Service) error
 	Get(id string) (Service, error)
 	Delete(id string) error
+	List() []Service
 }
 
 // MemoryStore provides concurrency-safe storage for Service definitions.
@@ -69,6 +70,17 @@ func (s *MemoryStore) Delete(id string) error {
 	return nil
 }
 
+// List returns all Services currently in the store.
+func (s *MemoryStore) List() []Service {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]Service, 0, len(s.services))
+	for _, svc := range s.services {
+		out = append(out, svc)
+	}
+	return out
+}
+
 // Create inserts a service into the database.
 func (s *SQLStore) Create(svc Service) error {
 	if err := s.db.Create(&svc).Error; err != nil {
@@ -102,6 +114,15 @@ func (s *SQLStore) Delete(id string) error {
 		return ErrServiceNotFound
 	}
 	return nil
+}
+
+// List returns all services from the database.
+func (s *SQLStore) List() []Service {
+	var out []Service
+	if err := s.db.Find(&out).Error; err != nil {
+		return nil
+	}
+	return out
 }
 
 // Error definitions for Store operations.

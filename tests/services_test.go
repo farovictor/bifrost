@@ -9,31 +9,25 @@ import (
 
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	"github.com/farovictor/bifrost/pkg/users"
 )
 
 func TestCreateService(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rk", APIKey: "k"}
-	if err := s.RootKeyStore.Create(rk); err != nil {
+	if err := env.Server.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
-	router := setupRouter(s)
 
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: rk.ID}
 	body, _ := json.Marshal(svc)
 	req := httptest.NewRequest(http.MethodPost, "/v1/services", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d", rr.Code)
 	}
-
 	var resp services.Service
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
@@ -44,28 +38,25 @@ func TestCreateService(t *testing.T) {
 }
 
 func TestDeleteService(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rkdead", APIKey: "k"}
-	if err := s.RootKeyStore.Create(rk); err != nil {
+	if err := env.Server.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "dead", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := s.ServiceStore.Create(svc); err != nil {
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
-	router := setupRouter(s)
+
 	req := httptest.NewRequest(http.MethodDelete, "/v1/services/"+svc.ID, nil)
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", rr.Code)
 	}
-	if _, err := s.ServiceStore.Get(svc.ID); err != services.ErrServiceNotFound {
+	if _, err := env.Server.ServiceStore.Get(svc.ID); err != services.ErrServiceNotFound {
 		t.Fatalf("service was not deleted")
 	}
 }

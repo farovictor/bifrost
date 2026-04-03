@@ -127,13 +127,16 @@ func main() {
 
 			r.Get("/hello", v1.SayHello)
 
+			r.Get("/keys", srv.ListKeys)
 			r.Post("/keys", srv.CreateKey)
 			r.Delete("/keys/{id}", srv.DeleteKey)
 
+			r.Get("/rootkeys", srv.ListRootKeys)
 			r.Post("/rootkeys", srv.CreateRootKey)
 			r.Put("/rootkeys/{id}", srv.UpdateRootKey)
 			r.Delete("/rootkeys/{id}", srv.DeleteRootKey)
 
+			r.Get("/services", srv.ListServices)
 			r.Post("/services", srv.CreateService)
 			r.Delete("/services/{id}", srv.DeleteService)
 
