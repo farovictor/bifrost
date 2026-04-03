@@ -31,7 +31,7 @@ func setupRouterRL(s *routes.Server) http.Handler {
 }
 
 func TestRateLimitExceeded(t *testing.T) {
-	s := newTestServer()
+	s := newTestServer(t)
 
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("ok"))

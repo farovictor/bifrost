@@ -14,7 +14,7 @@ import (
 )
 
 func TestProxyMissingKey(t *testing.T) {
-	router := setupRouter(newTestServer())
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -28,7 +28,7 @@ func TestProxyMissingKey(t *testing.T) {
 }
 
 func TestProxyInvalidKey(t *testing.T) {
-	router := setupRouter(newTestServer())
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/backend", nil)
 	req.Header.Set("X-Virtual-Key", "bad")
 	rr := httptest.NewRecorder()
@@ -43,7 +43,7 @@ func TestProxyInvalidKey(t *testing.T) {
 }
 
 func TestProxyExpiredKey(t *testing.T) {
-	s := newTestServer()
+	s := newTestServer(t)
 	k := keys.VirtualKey{ID: "expired", Scope: keys.ScopeRead, Target: "svc", ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 100}
 	if err := s.KeyStore.Create(k); err != nil {
 		t.Fatalf("seed key: %v", err)
@@ -64,7 +64,7 @@ func TestProxyExpiredKey(t *testing.T) {
 }
 
 func TestProxyScopeViolation(t *testing.T) {
-	s := newTestServer()
+	s := newTestServer(t)
 
 	called := false
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

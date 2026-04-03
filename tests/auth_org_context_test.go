@@ -58,7 +58,7 @@ func TestUserCreationOrgContext(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newTestServer()
+			s := newTestServer(t)
 
 			admin := users.User{ID: "admin", Name: "Admin", Email: "admin@example.com", APIKey: "admink"}
 			s.UserStore.Create(admin)
@@ -174,7 +174,7 @@ func TestOrgCtxMiddlewareFailures(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s := newTestServer()
+			s := newTestServer(t)
 			s.UserStore.Create(u)
 			s.OrgStore.Create(o)
 
