@@ -21,6 +21,11 @@ type Server struct {
 	MembershipStore orgs.MembershipStore
 }
 
+// ErrorResponse is the standard error body returned by all endpoints.
+type ErrorResponse struct {
+	Error string `json:"error" example:"not found"`
+}
+
 // writeError writes a JSON {"error":"..."} response with the given status code.
 func writeError(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json")

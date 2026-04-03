@@ -23,6 +23,10 @@ test:
 	go test ./... -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
+# swagger: regenerate OpenAPI spec from handler annotations
+swagger:
+	swag init --parseDependency --parseInternal -o docs/swagger
+
 # compose-up: start Docker Compose environment
 compose-up:
 		@docker compose up -d --build

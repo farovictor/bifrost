@@ -1,0 +1,724 @@
+definitions:
+  keys.VirtualKey:
+    properties:
+      expires_at:
+        type: string
+      id:
+        type: string
+      rate_limit:
+        type: integer
+      scope:
+        type: string
+      target:
+        type: string
+    type: object
+  orgs.Membership:
+    properties:
+      org_id:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  orgs.Organization:
+    properties:
+      domain:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  rootkeys.RootKey:
+    properties:
+      api_key:
+        type: string
+      id:
+        type: string
+    type: object
+  routes.ErrorResponse:
+    properties:
+      error:
+        example: not found
+        type: string
+    type: object
+  services.Service:
+    properties:
+      credential_header:
+        type: string
+      endpoint:
+        type: string
+      id:
+        type: string
+      root_key_id:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /healthz:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+  /v1/keys:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/keys.VirtualKey'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List virtual keys
+      tags:
+      - virtual-keys
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Virtual key to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/keys.VirtualKey'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/keys.VirtualKey'
+        "400":
+          description: invalid scope, rate_limit, or expires_at
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: service not found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: key already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create virtual key
+      tags:
+      - virtual-keys
+  /v1/keys/{id}:
+    delete:
+      parameters:
+      - description: Virtual key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Revoke virtual key
+      tags:
+      - virtual-keys
+  /v1/orgs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/orgs.Organization'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/orgs.Organization'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/orgs.Organization'
+        "400":
+          description: missing name
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: organization already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create organization
+      tags:
+      - organizations
+  /v1/orgs/{id}:
+    delete:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete organization
+      tags:
+      - organizations
+    get:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/orgs.Organization'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get organization
+      tags:
+      - organizations
+  /v1/orgs/{id}/members:
+    get:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/orgs.Membership'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List organization members
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Membership to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/orgs.Membership'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/orgs.Membership'
+        "400":
+          description: missing user_id or invalid role
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: membership already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Add member to organization
+      tags:
+      - organizations
+  /v1/orgs/{id}/members/{userID}:
+    delete:
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Remove member from organization
+      tags:
+      - organizations
+  /v1/rootkeys:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rootkeys.RootKey'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List root keys
+      tags:
+      - root-keys
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Root key to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rootkeys.RootKey'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rootkeys.RootKey'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: root key already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create root key
+      tags:
+      - root-keys
+  /v1/rootkeys/{id}:
+    delete:
+      parameters:
+      - description: Root key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete root key
+      tags:
+      - root-keys
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Root key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated root key
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/rootkeys.RootKey'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rootkeys.RootKey'
+        "400":
+          description: invalid request or id mismatch
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update root key
+      tags:
+      - root-keys
+  /v1/services:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/services.Service'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List services
+      tags:
+      - services
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Service to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.Service'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services.Service'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: root key not found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: service already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create service
+      tags:
+      - services
+  /v1/services/{id}:
+    delete:
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete service
+      tags:
+      - services
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated service
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/services.Service'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.Service'
+        "400":
+          description: invalid request or id mismatch
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: service or root key not found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update service
+      tags:
+      - services
+  /v1/token/refresh:
+    post:
+      description: Accepts a valid bearer token and returns a new one with a fresh
+        24h expiry.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'New token: {\"token\":\"...\"}'
+          schema:
+            type: object
+        "401":
+          description: invalid or expired token
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh bearer token
+      tags:
+      - users
+  /v1/user:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User with orgs array
+          schema:
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get authenticated user
+      tags:
+      - users
+  /v1/users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a user and optionally joins or creates an organization.
+        Returns the user and a signed bearer token.
+      parameters:
+      - description: User creation request
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User with token field
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "404":
+          description: organization not found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: user already exists
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - users
+  /version:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get version
+      tags:
+      - health
+swagger: "2.0"

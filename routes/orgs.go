@@ -12,6 +12,19 @@ import (
 )
 
 // CreateOrg handles POST /orgs.
+//
+// @Summary      Create organization
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        body  body      orgs.Organization  true  "Organization to create"
+// @Success      201   {object}  orgs.Organization
+// @Failure      400   {object}  ErrorResponse  "missing name"
+// @Failure      409   {object}  ErrorResponse  "organization already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs [post]
 func (s *Server) CreateOrg(w http.ResponseWriter, r *http.Request) {
 	var o orgs.Organization
 	if err := json.NewDecoder(r.Body).Decode(&o); err != nil {
@@ -41,12 +54,32 @@ func (s *Server) CreateOrg(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListOrgs handles GET /orgs.
+//
+// @Summary      List organizations
+// @Tags         organizations
+// @Produce      json
+// @Success      200  {array}   orgs.Organization
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs [get]
 func (s *Server) ListOrgs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.OrgStore.List())
 }
 
 // GetOrg handles GET /orgs/{id}.
+//
+// @Summary      Get organization
+// @Tags         organizations
+// @Produce      json
+// @Param        id   path      string  true  "Organization ID"
+// @Success      200  {object}  orgs.Organization
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs/{id} [get]
 func (s *Server) GetOrg(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	o, err := s.OrgStore.Get(id)
@@ -64,6 +97,16 @@ func (s *Server) GetOrg(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteOrg handles DELETE /orgs/{id}.
+//
+// @Summary      Delete organization
+// @Tags         organizations
+// @Param        id   path      string  true  "Organization ID"
+// @Success      204
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs/{id} [delete]
 func (s *Server) DeleteOrg(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := s.OrgStore.Delete(id); err != nil {
@@ -80,6 +123,17 @@ func (s *Server) DeleteOrg(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListOrgMembers handles GET /orgs/{id}/members.
+//
+// @Summary      List organization members
+// @Tags         organizations
+// @Produce      json
+// @Param        id   path      string  true  "Organization ID"
+// @Success      200  {array}   orgs.Membership
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs/{id}/members [get]
 func (s *Server) ListOrgMembers(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if _, err := s.OrgStore.Get(id); err != nil {
@@ -95,6 +149,21 @@ func (s *Server) ListOrgMembers(w http.ResponseWriter, r *http.Request) {
 }
 
 // AddOrgMember handles POST /orgs/{id}/members.
+//
+// @Summary      Add member to organization
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string          true  "Organization ID"
+// @Param        body  body      orgs.Membership true  "Membership to create"
+// @Success      201   {object}  orgs.Membership
+// @Failure      400   {object}  ErrorResponse  "missing user_id or invalid role"
+// @Failure      404   {object}  ErrorResponse  "organization not found"
+// @Failure      409   {object}  ErrorResponse  "membership already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs/{id}/members [post]
 func (s *Server) AddOrgMember(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "id")
 	if _, err := s.OrgStore.Get(orgID); err != nil {
@@ -140,6 +209,17 @@ func (s *Server) AddOrgMember(w http.ResponseWriter, r *http.Request) {
 }
 
 // RemoveOrgMember handles DELETE /orgs/{id}/members/{userID}.
+//
+// @Summary      Remove member from organization
+// @Tags         organizations
+// @Param        id      path      string  true  "Organization ID"
+// @Param        userID  path      string  true  "User ID"
+// @Success      204
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/orgs/{id}/members/{userID} [delete]
 func (s *Server) RemoveOrgMember(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "id")
 	userID := chi.URLParam(r, "userID")

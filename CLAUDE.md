@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 make run          # start server with in-memory stores, console logs
 make test         # go test ./... -coverprofile=coverage.out
+make swagger      # regenerate docs/swagger/ from handler annotations
 go test ./tests/  # run integration tests only
 go test ./tests/ -run TestFoo  # run a single test
 go build ./...    # verify compilation

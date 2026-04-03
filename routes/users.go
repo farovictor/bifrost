@@ -14,6 +14,20 @@ import (
 )
 
 // CreateUser handles POST /users and generates an API key.
+//
+// @Summary      Create user
+// @Description  Creates a user and optionally joins or creates an organization. Returns the user and a signed bearer token.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object  true  "User creation request"  SchemaExample({"name":"Alice","email":"alice@example.com","org_name":"Acme","role":"member"})
+// @Success      201   {object}  object  "User with token field"
+// @Failure      400   {object}  ErrorResponse
+// @Failure      404   {object}  ErrorResponse  "organization not found"
+// @Failure      409   {object}  ErrorResponse  "user already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/users [post]
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name    string `json:"name"`
@@ -118,6 +132,16 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken handles POST /token/refresh and issues a fresh 24h token.
+//
+// @Summary      Refresh bearer token
+// @Description  Accepts a valid bearer token and returns a new one with a fresh 24h expiry.
+// @Tags         users
+// @Produce      json
+// @Success      200  {object}  object  "New token: {\"token\":\"...\"}"
+// @Failure      401  {object}  ErrorResponse  "invalid or expired token"
+// @Failure      500  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/token/refresh [post]
 func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
@@ -151,6 +175,16 @@ func buildAuthToken(userID, orgID string) (string, error) {
 }
 
 // GetUserInfo handles GET /user and returns details about the authenticated user.
+//
+// @Summary      Get authenticated user
+// @Tags         users
+// @Produce      json
+// @Success      200  {object}  object  "User with orgs array"
+// @Failure      401  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/user [get]
 func (s *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 

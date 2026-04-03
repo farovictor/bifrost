@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/farovictor/bifrost/docs/swagger"
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/farovictor/bifrost/pkg/database"
@@ -111,6 +112,8 @@ func main() {
 
 	r.Get("/healthz", routes.Healthz)
 	r.Get("/version", routes.Version)
+	r.Get("/docs/openapi.json", routes.OpenAPISpec)
+	r.Get("/docs/openapi.yaml", routes.OpenAPISpecYAML)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
