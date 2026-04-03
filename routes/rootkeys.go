@@ -32,6 +32,12 @@ func (s *Server) CreateRootKey(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(k)
 }
 
+// ListRootKeys handles GET /rootkeys and returns all root keys.
+func (s *Server) ListRootKeys(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.RootKeyStore.List())
+}
+
 // DeleteRootKey handles DELETE /rootkeys/{id} to remove a root key.
 func (s *Server) DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

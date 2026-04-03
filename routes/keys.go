@@ -54,6 +54,12 @@ func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(k)
 }
 
+// ListKeys handles GET /keys and returns all VirtualKeys.
+func (s *Server) ListKeys(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.KeyStore.List())
+}
+
 // DeleteKey handles DELETE /keys/{id} and removes a VirtualKey.
 func (s *Server) DeleteKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

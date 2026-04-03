@@ -12,129 +12,100 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	"github.com/farovictor/bifrost/pkg/users"
 )
 
 func TestCreateKeyInvalidJSON(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
-	router := setupRouter(s)
-
+	env := newTestEnv(t)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", strings.NewReader("{bad"))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
 	}
-
 	if body := strings.TrimSpace(rr.Body.String()); body != "invalid request" {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
 
 func TestCreateKeyDuplicate(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	svc := services.Service{ID: "svc", Endpoint: "http://example.com", RootKeyID: "rk"}
-	if err := s.ServiceStore.Create(svc); err != nil {
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
 	k := keys.VirtualKey{ID: "dup", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
-	if err := s.KeyStore.Create(k); err != nil {
+	if err := env.Server.KeyStore.Create(k); err != nil {
 		t.Fatalf("failed to seed store: %v", err)
 	}
 
 	body, _ := json.Marshal(k)
-	router := setupRouter(s)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusConflict {
 		t.Fatalf("expected status 409, got %d", rr.Code)
 	}
-
 	if body := strings.TrimSpace(rr.Body.String()); body != "key already exists" {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
 
 func TestDeleteKeyNotFound(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
-	router := setupRouter(s)
-
+	env := newTestEnv(t)
 	req := httptest.NewRequest(http.MethodDelete, "/v1/keys/unknown", nil)
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", rr.Code)
 	}
-
 	if body := strings.TrimSpace(rr.Body.String()); body != "not found" {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
 
 func TestCreateKeyMissingService(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
-	router := setupRouter(s)
-
+	env := newTestEnv(t)
 	k := keys.VirtualKey{ID: "nosvc", Scope: "read", Target: "missing", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", rr.Code)
 	}
-
 	if body := strings.TrimSpace(rr.Body.String()); body != "service not found" {
 		t.Fatalf("unexpected body: %s", body)
 	}
-
-	if _, err := s.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
+	if _, err := env.Server.KeyStore.Get(k.ID); err != keys.ErrKeyNotFound {
 		t.Fatalf("key should not have been created")
 	}
 }
 
 func TestCreateKeyInvalidScope(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rk-scope", APIKey: "k"}
-	if err := s.RootKeyStore.Create(rk); err != nil {
+	if err := env.Server.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-scope", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := s.ServiceStore.Create(svc); err != nil {
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "badscope", Scope: "unknown", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
@@ -145,26 +116,22 @@ func TestCreateKeyInvalidScope(t *testing.T) {
 }
 
 func TestCreateKeyEmptyScope(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rk-empty", APIKey: "k"}
-	if err := s.RootKeyStore.Create(rk); err != nil {
+	if err := env.Server.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-empty", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := s.ServiceStore.Create(svc); err != nil {
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "emptyscope", Scope: "", Target: svc.ID, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)
@@ -175,26 +142,22 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 }
 
 func TestCreateKeyPastExpiration(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
+	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rk-exp", APIKey: "k"}
-	if err := s.RootKeyStore.Create(rk); err != nil {
+	if err := env.Server.RootKeyStore.Create(rk); err != nil {
 		t.Fatalf("seed rootkey: %v", err)
 	}
 	svc := services.Service{ID: "svc-exp", Endpoint: "http://example.com", RootKeyID: rk.ID}
-	if err := s.ServiceStore.Create(svc); err != nil {
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
 		t.Fatalf("failed to seed service: %v", err)
 	}
-	router := setupRouter(s)
 
 	k := keys.VirtualKey{ID: "expired", Scope: "read", Target: svc.ID, ExpiresAt: time.Now().Add(-time.Hour), RateLimit: 1}
 	body, _ := json.Marshal(k)
 	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", rr.Code)

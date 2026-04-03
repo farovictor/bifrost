@@ -9,7 +9,6 @@ import (
 	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/go-chi/chi/v5"
 
-	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
@@ -34,11 +33,14 @@ func setupRouter(s *routes.Server) http.Handler {
 			r.Use(rl.AuthMiddleware(s.UserStore))
 			r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
 			r.Get("/hello", v1.SayHello)
+			r.Get("/keys", s.ListKeys)
 			r.Post("/keys", s.CreateKey)
 			r.Delete("/keys/{id}", s.DeleteKey)
+			r.Get("/rootkeys", s.ListRootKeys)
 			r.Post("/rootkeys", s.CreateRootKey)
 			r.Put("/rootkeys/{id}", s.UpdateRootKey)
 			r.Delete("/rootkeys/{id}", s.DeleteRootKey)
+			r.Get("/services", s.ListServices)
 			r.Post("/services", s.CreateService)
 			r.Delete("/services/{id}", s.DeleteService)
 		})
@@ -47,7 +49,7 @@ func setupRouter(s *routes.Server) http.Handler {
 }
 
 func TestHealthz(t *testing.T) {
-	router := setupRouter(newTestServer())
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -55,14 +57,13 @@ func TestHealthz(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	if body := rr.Body.String(); body != "ok" {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
 
 func TestVersion(t *testing.T) {
-	router := setupRouter(newTestServer())
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/version", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -70,32 +71,25 @@ func TestVersion(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	var resp map[string]string
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-
 	if resp["version"] == "" {
 		t.Fatalf("version field is empty")
 	}
 }
 
 func TestV1Hello(t *testing.T) {
-	s := newTestServer()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	s.UserStore.Create(u)
-	router := setupRouter(s)
+	env := newTestEnv(t)
 	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	if body := rr.Body.String(); body != "hello world" {
 		t.Fatalf("unexpected body: %s", body)
 	}
