@@ -12,12 +12,11 @@ import (
 	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
-	routes "github.com/farovictor/bifrost/routes"
 )
 
 // Proxy forwards the request to the target service determined by the provided
 // virtual key. The key should be supplied via the X-Virtual-Key header.
-func Proxy(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	keyID := r.Header.Get("X-Virtual-Key")
 	r.Header.Del("X-Virtual-Key")
 	if keyID == "" {
@@ -29,22 +28,22 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if keyID == "" {
-		http.Error(w, "missing key", http.StatusUnauthorized)
+		writeError(w, "missing key", http.StatusUnauthorized)
 		return
 	}
 
-	k, err := routes.KeyStore.Get(keyID)
+	k, err := h.KeyStore.Get(keyID)
 	if err != nil {
 		if err == keys.ErrKeyNotFound {
-			http.Error(w, "invalid key", http.StatusUnauthorized)
+			writeError(w, "invalid key", http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if time.Now().After(k.ExpiresAt) {
-		http.Error(w, "key expired", http.StatusUnauthorized)
+		writeError(w, "key expired", http.StatusUnauthorized)
 		return
 	}
 
@@ -55,39 +54,39 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 	switch k.Scope {
 	case keys.ScopeRead:
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			http.Error(w, "insufficient scope", http.StatusForbidden)
+			writeError(w, "insufficient scope", http.StatusForbidden)
 			return
 		}
 	case keys.ScopeWrite:
 		// write scope allows all methods
 	default:
-		http.Error(w, "insufficient scope", http.StatusForbidden)
+		writeError(w, "insufficient scope", http.StatusForbidden)
 		return
 	}
 
-	svc, err := routes.ServiceStore.Get(k.Target)
+	svc, err := h.ServiceStore.Get(k.Target)
 	if err != nil {
 		if err == services.ErrServiceNotFound {
-			http.Error(w, "service not found", http.StatusNotFound)
+			writeError(w, "service not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	rk, err := routes.RootKeyStore.Get(svc.RootKeyID)
+	rk, err := h.RootKeyStore.Get(svc.RootKeyID)
 	if err != nil {
 		if err == rootkeys.ErrKeyNotFound {
-			http.Error(w, "root key not found", http.StatusInternalServerError)
+			writeError(w, "root key not found", http.StatusInternalServerError)
 			return
 		}
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeError(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	target, err := url.Parse(svc.Endpoint)
 	if err != nil {
-		http.Error(w, "bad service endpoint", http.StatusInternalServerError)
+		writeError(w, "bad service endpoint", http.StatusInternalServerError)
 		return
 	}
 
@@ -95,7 +94,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 	prefix := "/v1/proxy"
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, prefix)
 
-	r.Header.Set("X-API-Key", rk.APIKey)
+	injectCredential(r, svc.CredentialHeader, rk.APIKey)
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.Host = target.Host

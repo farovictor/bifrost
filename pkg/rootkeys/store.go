@@ -13,6 +13,7 @@ type Store interface {
 	Get(id string) (RootKey, error)
 	Delete(id string) error
 	Update(RootKey) error
+	List() []RootKey
 }
 
 // MemoryStore keeps RootKeys in memory with concurrency safety.
@@ -126,6 +127,26 @@ func (s *SQLStore) Update(k RootKey) error {
 		return ErrKeyNotFound
 	}
 	return nil
+}
+
+// List returns all RootKeys currently in the store.
+func (s *MemoryStore) List() []RootKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]RootKey, 0, len(s.keys))
+	for _, k := range s.keys {
+		out = append(out, k)
+	}
+	return out
+}
+
+// List returns all root keys from the database.
+func (s *SQLStore) List() []RootKey {
+	var out []RootKey
+	if err := s.db.Find(&out).Error; err != nil {
+		return nil
+	}
+	return out
 }
 
 // Error definitions for store operations.

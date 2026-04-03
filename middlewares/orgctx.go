@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/farovictor/bifrost/pkg/auth"
-	routes "github.com/farovictor/bifrost/routes"
+	"github.com/farovictor/bifrost/pkg/orgs"
 )
 
 // orgCtxKey is the context key for organization context.
@@ -26,7 +26,7 @@ func OrgFromContext(ctx context.Context) OrgContext {
 }
 
 // OrgCtxMiddleware validates the auth token and stores membership info in context.
-func OrgCtxMiddleware() func(http.Handler) http.Handler {
+func OrgCtxMiddleware(ms orgs.MembershipStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -42,7 +42,7 @@ func OrgCtxMiddleware() func(http.Handler) http.Handler {
 			}
 
 			role := ""
-			if m, err := routes.MembershipStore.Get(tok.UserID, tok.OrgID); err == nil {
+			if m, err := ms.Get(tok.UserID, tok.OrgID); err == nil {
 				role = m.Role
 			}
 

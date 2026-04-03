@@ -48,35 +48,52 @@ func main() {
 
 	dsn := config.PostgresDSN()
 	dbType := config.DBType()
-	initMemoryStores := func() {
-		routes.UserStore = users.NewMemoryStore()
-		routes.KeyStore = keys.NewMemoryStore()
-		routes.RootKeyStore = rootkeys.NewMemoryStore()
-		routes.ServiceStore = services.NewMemoryStore()
-		routes.OrgStore = orgs.NewMemoryStore()
-		routes.MembershipStore = orgs.NewMemoryMembershipStore()
-		logging.Logger.Info().Msg("In-Memory Store set")
-	}
+
+	var srv *routes.Server
 
 	switch dbType {
 	case "sqlite", "postgres":
 		if dsn == "" {
-			initMemoryStores()
+			srv = &routes.Server{
+				UserStore:       users.NewMemoryStore(),
+				KeyStore:        keys.NewMemoryStore(),
+				RootKeyStore:    rootkeys.NewMemoryStore(),
+				ServiceStore:    services.NewMemoryStore(),
+				OrgStore:        orgs.NewMemoryStore(),
+				MembershipStore: orgs.NewMemoryMembershipStore(),
+			}
+			logging.Logger.Info().Msg("In-Memory Store set")
 		} else {
 			db, err := database.Connect(dbType, dsn)
 			if err != nil {
 				logging.Logger.Fatal().Err(err).Msg("connect " + dbType)
 			}
-			routes.UserStore = users.NewSQLStore(db)
-			routes.KeyStore = keys.NewSQLStore(db)
-			routes.RootKeyStore = rootkeys.NewSQLStore(db)
-			routes.ServiceStore = services.NewSQLStore(db)
-			routes.OrgStore = orgs.NewSQLStore(db)
-			routes.MembershipStore = orgs.NewSQLMembershipStore(db)
+			srv = &routes.Server{
+				UserStore:       users.NewSQLStore(db),
+				KeyStore:        keys.NewSQLStore(db),
+				RootKeyStore:    rootkeys.NewSQLStore(db),
+				ServiceStore:    services.NewSQLStore(db),
+				OrgStore:        orgs.NewSQLStore(db),
+				MembershipStore: orgs.NewSQLMembershipStore(db),
+			}
 			logging.Logger.Info().Str("db", dbType).Msg("Store set")
 		}
 	default:
-		initMemoryStores()
+		srv = &routes.Server{
+			UserStore:       users.NewMemoryStore(),
+			KeyStore:        keys.NewMemoryStore(),
+			RootKeyStore:    rootkeys.NewMemoryStore(),
+			ServiceStore:    services.NewMemoryStore(),
+			OrgStore:        orgs.NewMemoryStore(),
+			MembershipStore: orgs.NewMemoryMembershipStore(),
+		}
+		logging.Logger.Info().Msg("In-Memory Store set")
+	}
+
+	v1h := &v1.Handler{
+		KeyStore:     srv.KeyStore,
+		ServiceStore: srv.ServiceStore,
+		RootKeyStore: srv.RootKeyStore,
 	}
 
 	if config.MetricsEnabled() {
@@ -96,30 +113,42 @@ func main() {
 		r.Use(apiVersionCtx("v1"))
 
 		// Endpoints that only require the auth token
-		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
-		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
-		r.With(rl.OrgCtxMiddleware()).Post("/user/rootkeys", routes.CreateRootKey)
+		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/users", srv.CreateUser)
+		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Get("/user", srv.GetUserInfo)
+		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/user/rootkeys", srv.CreateRootKey)
+
+		// Proxy - authenticated by the virtual key; no API key or token required
+		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
 
 		// Endpoints requiring API key and auth token
 		r.Group(func(r chi.Router) {
-			r.Use(rl.AuthMiddleware())
-			r.Use(rl.OrgCtxMiddleware())
+			r.Use(rl.AuthMiddleware(srv.UserStore))
+			r.Use(rl.OrgCtxMiddleware(srv.MembershipStore))
 
 			r.Get("/hello", v1.SayHello)
 
-			r.Post("/keys", routes.CreateKey)
-			r.Delete("/keys/{id}", routes.DeleteKey)
+			r.Get("/keys", srv.ListKeys)
+			r.Post("/keys", srv.CreateKey)
+			r.Delete("/keys/{id}", srv.DeleteKey)
 
-			r.Post("/rootkeys", routes.CreateRootKey)
-			r.Put("/rootkeys/{id}", routes.UpdateRootKey)
-			r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
+			r.Get("/rootkeys", srv.ListRootKeys)
+			r.Post("/rootkeys", srv.CreateRootKey)
+			r.Put("/rootkeys/{id}", srv.UpdateRootKey)
+			r.Delete("/rootkeys/{id}", srv.DeleteRootKey)
 
-			r.Post("/services", routes.CreateService)
-			r.Delete("/services/{id}", routes.DeleteService)
+			r.Get("/services", srv.ListServices)
+			r.Post("/services", srv.CreateService)
+			r.Delete("/services/{id}", srv.DeleteService)
 
-			r.With(rl.RateLimitMiddleware()).Post("/rate", v1.SayHello)
+			r.Get("/orgs", srv.ListOrgs)
+			r.Post("/orgs", srv.CreateOrg)
+			r.Get("/orgs/{id}", srv.GetOrg)
+			r.Delete("/orgs/{id}", srv.DeleteOrg)
+			r.Get("/orgs/{id}/members", srv.ListOrgMembers)
+			r.Post("/orgs/{id}/members", srv.AddOrgMember)
+			r.Delete("/orgs/{id}/members/{userID}", srv.RemoveOrgMember)
 
-			r.With(rl.RateLimitMiddleware()).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+			r.With(rl.RateLimitMiddleware(srv.KeyStore)).Post("/rate", v1.SayHello)
 		})
 	})
 

@@ -10,22 +10,19 @@ import (
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 )
 
-// RootKeyStore provides access to persisted root keys.
-var RootKeyStore rootkeys.Store
-
 // CreateRootKey handles POST /rootkeys to store a new root key.
-func CreateRootKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateRootKey(w http.ResponseWriter, r *http.Request) {
 	var k rootkeys.RootKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	if err := RootKeyStore.Create(k); err != nil {
+	if err := s.RootKeyStore.Create(k); err != nil {
 		switch err {
 		case rootkeys.ErrKeyExists:
-			http.Error(w, "root key already exists", http.StatusConflict)
+			writeError(w, "root key already exists", http.StatusConflict)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -35,15 +32,21 @@ func CreateRootKey(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(k)
 }
 
+// ListRootKeys handles GET /rootkeys and returns all root keys.
+func (s *Server) ListRootKeys(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.RootKeyStore.List())
+}
+
 // DeleteRootKey handles DELETE /rootkeys/{id} to remove a root key.
-func DeleteRootKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	if err := RootKeyStore.Delete(id); err != nil {
+	if err := s.RootKeyStore.Delete(id); err != nil {
 		switch err {
 		case rootkeys.ErrKeyNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -52,26 +55,25 @@ func DeleteRootKey(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateRootKey handles PUT /rootkeys/{id} to replace a stored root key.
-func UpdateRootKey(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateRootKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var k rootkeys.RootKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
+		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
-	// ensure path id and body id match
 	if k.ID == "" {
 		k.ID = id
 	} else if k.ID != id {
-		http.Error(w, "id mismatch", http.StatusBadRequest)
+		writeError(w, "id mismatch", http.StatusBadRequest)
 		return
 	}
-	if err := RootKeyStore.Update(k); err != nil {
+	if err := s.RootKeyStore.Update(k); err != nil {
 		switch err {
 		case rootkeys.ErrKeyNotFound:
-			http.Error(w, "not found", http.StatusNotFound)
+			writeError(w, "not found", http.StatusNotFound)
 		default:
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			writeError(w, "internal error", http.StatusInternalServerError)
 		}
 		return
 	}

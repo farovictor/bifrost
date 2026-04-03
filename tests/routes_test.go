@@ -9,39 +9,55 @@ import (
 	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/go-chi/chi/v5"
 
-	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
 )
 
-func setupRouter() http.Handler {
+func setupRouter(s *routes.Server) http.Handler {
+	v1h := &v1.Handler{
+		KeyStore:     s.KeyStore,
+		ServiceStore: s.ServiceStore,
+		RootKeyStore: s.RootKeyStore,
+	}
 	r := chi.NewRouter()
 	r.Get("/healthz", routes.Healthz)
 	r.Get("/version", routes.Version)
 	r.Route("/v1", func(r chi.Router) {
-		r.With(rl.OrgCtxMiddleware()).Post("/users", routes.CreateUser)
-		r.With(rl.OrgCtxMiddleware()).Get("/user", routes.GetUserInfo)
-		r.With(rl.OrgCtxMiddleware()).Post("/user/rootkeys", routes.CreateRootKey)
+		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/users", s.CreateUser)
+		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Get("/user", s.GetUserInfo)
+		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/user/rootkeys", s.CreateRootKey)
+
+		r.With(rl.RateLimitMiddleware(s.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
 
 		r.Group(func(r chi.Router) {
-			r.Use(rl.AuthMiddleware())
-			r.Use(rl.OrgCtxMiddleware())
+			r.Use(rl.AuthMiddleware(s.UserStore))
+			r.Use(rl.OrgCtxMiddleware(s.MembershipStore))
 			r.Get("/hello", v1.SayHello)
-			r.Post("/keys", routes.CreateKey)
-			r.Delete("/keys/{id}", routes.DeleteKey)
-			r.Post("/rootkeys", routes.CreateRootKey)
-			r.Put("/rootkeys/{id}", routes.UpdateRootKey)
-			r.Delete("/rootkeys/{id}", routes.DeleteRootKey)
-			r.Post("/services", routes.CreateService)
-			r.Delete("/services/{id}", routes.DeleteService)
-			r.Handle("/proxy/{rest:.*}", http.HandlerFunc(v1.Proxy))
+			r.Get("/keys", s.ListKeys)
+			r.Post("/keys", s.CreateKey)
+			r.Delete("/keys/{id}", s.DeleteKey)
+			r.Get("/rootkeys", s.ListRootKeys)
+			r.Post("/rootkeys", s.CreateRootKey)
+			r.Put("/rootkeys/{id}", s.UpdateRootKey)
+			r.Delete("/rootkeys/{id}", s.DeleteRootKey)
+			r.Get("/services", s.ListServices)
+			r.Post("/services", s.CreateService)
+			r.Delete("/services/{id}", s.DeleteService)
+
+			r.Get("/orgs", s.ListOrgs)
+			r.Post("/orgs", s.CreateOrg)
+			r.Get("/orgs/{id}", s.GetOrg)
+			r.Delete("/orgs/{id}", s.DeleteOrg)
+			r.Get("/orgs/{id}/members", s.ListOrgMembers)
+			r.Post("/orgs/{id}/members", s.AddOrgMember)
+			r.Delete("/orgs/{id}/members/{userID}", s.RemoveOrgMember)
 		})
 	})
 	return r
 }
 
 func TestHealthz(t *testing.T) {
-	router := setupRouter()
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -49,14 +65,13 @@ func TestHealthz(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	if body := rr.Body.String(); body != "ok" {
 		t.Fatalf("unexpected body: %s", body)
 	}
 }
 
 func TestVersion(t *testing.T) {
-	router := setupRouter()
+	router := setupRouter(newTestServer(t))
 	req := httptest.NewRequest(http.MethodGet, "/version", nil)
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
@@ -64,32 +79,25 @@ func TestVersion(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	var resp map[string]string
 	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-
 	if resp["version"] == "" {
 		t.Fatalf("version field is empty")
 	}
 }
 
 func TestV1Hello(t *testing.T) {
-	routes.UserStore = users.NewMemoryStore()
-	u := users.User{ID: "u", Name: "U", Email: "u@example.com", APIKey: "secret"}
-	routes.UserStore.Create(u)
-	router := setupRouter()
+	env := newTestEnv(t)
 	req := httptest.NewRequest(http.MethodGet, "/v1/hello", nil)
-	req.Header.Set("X-API-Key", u.APIKey)
-	req.Header.Set("Authorization", "Bearer "+makeToken(u.ID))
+	env.Authorize(req)
 	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+	env.Router.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", rr.Code)
 	}
-
 	if body := rr.Body.String(); body != "hello world" {
 		t.Fatalf("unexpected body: %s", body)
 	}
