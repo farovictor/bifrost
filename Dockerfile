@@ -1,10 +1,11 @@
 # Stage 1: build the Go binary
 FROM golang:1.23-alpine AS builder
+ARG VERSION=dev
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o bifrost-server main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${VERSION}" -o bifrost-server main.go
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o bifrost-cli ./cmd/bifrost
 
 # Stage 2: create a minimal runtime image

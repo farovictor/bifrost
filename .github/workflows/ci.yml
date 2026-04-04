@@ -2,59 +2,93 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "feat/**", "fix/**", "docs/**"]
   pull_request:
     branches: [main]
 
 jobs:
-  tests:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: .go-version
-
-      - name: Cache Go modules and build cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
 
       - name: Download dependencies
         run: go mod download
 
-      - name: Build
-        run: make build
+      - name: Vet
+        run: go vet ./...
 
       - name: Test
-        run: make test
+        run: go test ./... -coverprofile=coverage.out -race
+        env:
+          BIFROST_MODE: test
 
-  # docker-build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+      - name: Coverage report
+        run: go tool cover -func=coverage.out
 
-  #     - name: Build Docker image
-  #       run: docker build -t bifrost:local .
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .go-version
+          cache: true
+
+      - name: Build binary
+        run: make build
+
+  swagger-check:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .go-version
+          cache: true
+
+      - name: Install swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Regenerate spec
+        run: swag init -g docs.go --parseDependency --parseInternal -o docs/swagger
+
+      - name: Check for drift
+        run: |
+          if ! git diff --exit-code docs/swagger/; then
+            echo ""
+            echo "❌ OpenAPI spec is out of sync with handler annotations."
+            echo "   Run 'make swagger' locally and commit the result."
+            git diff docs/swagger/
+            exit 1
+          fi
+          echo "✅ OpenAPI spec is up to date."
 
   integration-check:
     runs-on: ubuntu-latest
+    needs: build
     services:
       redis:
         image: redis:7-alpine
         ports:
           - 6379:6379
       postgres:
-        image: postgres:15-alpine
+        image: postgres:16-alpine
         env:
           POSTGRES_USER: bifrost
           POSTGRES_PASSWORD: bifrost
@@ -68,8 +102,7 @@ jobs:
           --health-retries=5
           --health-start-period=5s
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Build Docker image
         run: docker build -t bifrost:test .
