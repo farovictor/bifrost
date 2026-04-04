@@ -64,8 +64,10 @@ func TestAuthMiddlewareInvalidKey(t *testing.T) {
 }
 
 func TestAuthMiddlewareValidKey(t *testing.T) {
+	// In test mode AuthMiddleware validates against StaticAPIKey ("secret" by default).
+	t.Setenv("BIFROST_STATIC_API_KEY", "secret")
 	store := users.NewMemoryStore()
-	u := users.User{ID: "u1", Name: "U", Email: "u@u.com", APIKey: "goodkey"}
+	u := users.User{ID: "u1", Name: "U", Email: "u@u.com", APIKey: "secret"}
 	store.Create(u)
 
 	called := false
@@ -75,7 +77,7 @@ func TestAuthMiddlewareValidKey(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-API-Key", "goodkey")
+	req.Header.Set("X-API-Key", "secret")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 
@@ -88,8 +90,10 @@ func TestAuthMiddlewareValidKey(t *testing.T) {
 }
 
 func TestAuthMiddlewareKeyFromAuthHeader(t *testing.T) {
+	// In test mode AuthMiddleware validates against StaticAPIKey ("secret" by default).
+	t.Setenv("BIFROST_STATIC_API_KEY", "secret")
 	store := users.NewMemoryStore()
-	u := users.User{ID: "u1", Name: "U", Email: "u@u.com", APIKey: "mykey"}
+	u := users.User{ID: "u1", Name: "U", Email: "u@u.com", APIKey: "secret"}
 	store.Create(u)
 
 	called := false
@@ -100,7 +104,7 @@ func TestAuthMiddlewareKeyFromAuthHeader(t *testing.T) {
 
 	// key passed via Authorization: Bearer <key>
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Bearer mykey")
+	req.Header.Set("Authorization", "Bearer secret")
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
 

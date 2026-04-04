@@ -143,6 +143,10 @@ func TestUserCreationOrgContext(t *testing.T) {
 }
 
 func TestOrgCtxMiddlewareFailures(t *testing.T) {
+	// Force production mode so OrgCtxMiddleware performs real token verification.
+	// In test/sqlite mode the middleware bypasses token checks entirely.
+	t.Setenv("BIFROST_MODE", "production")
+	t.Setenv("BIFROST_DB", "postgres")
 	u := users.User{ID: "u1", Name: "User1", Email: "u1@example.com", APIKey: "secret"}
 	o := orgs.Organization{ID: "o1", Name: "Org", Domain: "example.com", Email: "org@example.com"}
 
