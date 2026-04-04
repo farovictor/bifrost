@@ -54,6 +54,13 @@ func main() {
 	}
 	dbType := config.DBType()
 
+	encKey := config.EncryptionKey()
+	if encKey != nil {
+		logging.Logger.Info().Msg("Root key encryption enabled")
+	} else {
+		logging.Logger.Warn().Msg("BIFROST_ENCRYPTION_KEY not set — root keys stored without encryption")
+	}
+
 	var srv *routes.Server
 
 	switch dbType {
@@ -62,7 +69,7 @@ func main() {
 			srv = &routes.Server{
 				UserStore:       users.NewMemoryStore(),
 				KeyStore:        keys.NewMemoryStore(),
-				RootKeyStore:    rootkeys.NewMemoryStore(),
+				RootKeyStore:    rootkeys.NewMemoryStoreWithKey(encKey),
 				ServiceStore:    services.NewMemoryStore(),
 				OrgStore:        orgs.NewMemoryStore(),
 				MembershipStore: orgs.NewMemoryMembershipStore(),
@@ -76,7 +83,7 @@ func main() {
 			srv = &routes.Server{
 				UserStore:       users.NewSQLStore(db),
 				KeyStore:        keys.NewSQLStore(db),
-				RootKeyStore:    rootkeys.NewSQLStore(db),
+				RootKeyStore:    rootkeys.NewSQLStoreWithKey(db, encKey),
 				ServiceStore:    services.NewSQLStore(db),
 				OrgStore:        orgs.NewSQLStore(db),
 				MembershipStore: orgs.NewSQLMembershipStore(db),
@@ -87,7 +94,7 @@ func main() {
 		srv = &routes.Server{
 			UserStore:       users.NewMemoryStore(),
 			KeyStore:        keys.NewMemoryStore(),
-			RootKeyStore:    rootkeys.NewMemoryStore(),
+			RootKeyStore:    rootkeys.NewMemoryStoreWithKey(encKey),
 			ServiceStore:    services.NewMemoryStore(),
 			OrgStore:        orgs.NewMemoryStore(),
 			MembershipStore: orgs.NewMemoryMembershipStore(),

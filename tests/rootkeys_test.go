@@ -65,8 +65,8 @@ func TestUpdateRootKey(t *testing.T) {
 	rr := httptest.NewRecorder()
 	env.Router.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rr.Code)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d", rr.Code)
 	}
 	rk, err := env.Server.RootKeyStore.Get(orig.ID)
 	if err != nil {
