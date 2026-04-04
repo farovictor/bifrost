@@ -683,6 +683,397 @@ No static cloud credentials in the cluster. Pods authenticate via projected OIDC
 
 ---
 
+## 9. Security
+
+### 9.1 Threat Model Summary
+
+| Threat | Mitigation |
+|--------|-----------|
+| Credential leakage via API response | Root keys never returned in plaintext after creation; encrypted at rest (Story 1.3) |
+| Token forgery | HMAC-SHA256 signing with `BIFROST_SIGNING_KEY`; verify on every request |
+| Virtual key abuse | Scope enforcement, expiry, rate limiting, budget cap |
+| Unauthorized management access | Dual-credential requirement: `X-API-Key` + Bearer token |
+| Bootstrap takeover | `POST /v1/setup` blocked after first user exists (`Count() > 0`) |
+| CORS exploitation | Explicit allowlist via `BIFROST_CORS_ORIGINS`; defaults to `*` in dev, must be locked in prod |
+| Replay attacks | Token carries `ExpiresAt`; short-lived (configurable TTL, default 24h) |
+| Enumeration | All stores return opaque UUIDs; no sequential IDs |
+| Secret backend compromise | Vault with lease rotation (Epic 4); local backend uses AES-256-GCM |
+| Excessive proxy usage | Per-key rate limit + budget cap; async tracker flags overruns |
+
+### 9.2 Authentication Layers
+
+```
+Layer 1 — Identity (who are you?)
+  X-API-Key: apk-...
+  → AuthMiddleware validates against UserStore
+
+Layer 2 — Context (which org, which role?)
+  Authorization: Bearer <hmac-token>
+  → OrgCtxMiddleware decodes {userID, orgID, expiresAt}
+  → looks up Membership{role} in MembershipStore
+
+Layer 3 — Proxy (is this virtual key valid?)
+  ?key=vk-... or Authorization: Bearer vk-...
+  → RateLimitMiddleware checks scope, expiry, budget, rate
+```
+
+Management endpoints require **Layer 1 + Layer 2**.
+Proxy endpoints require **Layer 3 only**.
+`/v1/setup`, `/healthz`, `/version`, `/docs/*` require **no auth**.
+
+### 9.3 Token Security
+
+```go
+type AuthToken struct {
+    UserID    string
+    OrgID     string
+    ExpiresAt time.Time
+}
+```
+
+- Signed with HMAC-SHA256 using `BIFROST_SIGNING_KEY`
+- Verified on every authenticated request — no session store, no DB lookup
+- TTL configurable via `BIFROST_TOKEN_TTL` (NFR13); default 24h
+- `POST /v1/token/refresh` issues a fresh token without re-authenticating credentials
+- **Emergency revocation:** rotating `BIFROST_SIGNING_KEY` immediately invalidates all existing tokens
+
+### 9.4 Encryption at Rest (Story 1.3)
+
+Root keys are encrypted before storage:
+
+```
+plaintext credential
+    │
+    ▼  AES-256-GCM
+    │  key: BIFROST_ENCRYPTION_KEY (32 bytes)
+    │  nonce: 12 random bytes prepended to ciphertext
+    ▼
+EncryptedValue []byte  →  stored in DB
+```
+
+Decryption happens only inside the proxy handler, in memory, never logged. HTTP responses for `RootKey` never include `EncryptedValue` — only `ID`, `Name`, `ServiceID`, and `CredentialHeader` are returned.
+
+### 9.5 Secret Backend (Epic 4)
+
+```
+┌─────────────────────────────────────────────┐
+│  SecretBackend interface                    │
+│  GetSecret(id) / PutSecret(id, val)         │
+│  DeleteSecret(id)                           │
+└────────────────┬────────────────────────────┘
+                 │
+     ┌───────────┴───────────┐
+     ▼                       ▼
+LocalBackend            VaultBackend
+(AES-256-GCM            (HashiCorp Vault
+ via RootKeyStore)       KV v2, leases)
+```
+
+Vault advantages: dynamic secrets with automatic rotation, fine-grained policies per path, full audit log, lease-based access.
+
+### 9.6 Virtual Key Scoping
+
+Every virtual key carries a `Scope` string validated against the target service name at proxy time. A key scoped to `"openai"` cannot be used against a `"stripe"` endpoint — returns 403 on mismatch. Wildcard `"*"` allows any service.
+
+### 9.7 Rate Limiting & Budget Enforcement
+
+```
+Per-request (RateLimitMiddleware):
+  1. Increment Redis counter  key: "rl:{keyID}:{window}"
+  2. If counter > VirtualKey.RateLimit → 429
+
+Per-request (Proxy handler):
+  3. If SpentUSD >= BudgetUSD → 402 Payment Required
+  4. After response: update SpentUSD async via UsageTracker (Epic 3)
+```
+
+Redis is used when `REDIS_ADDR` is set; falls back to a local in-process counter (not suitable for multi-instance deployments).
+
+### 9.8 MCP Security (Epic 2)
+
+The `/mcp` endpoint authenticates via `X-API-Key` only. MCP-issued virtual keys are tagged `IssuedBy: "mcp"` and optionally carry `MCPClientID` for per-agent attribution. All org boundaries enforced identically to the REST API.
+
+### 9.9 Production Security Checklist
+
+- [ ] `BIFROST_SIGNING_KEY` — minimum 32 random bytes, stored in Secrets Manager / Vault
+- [ ] `BIFROST_ENCRYPTION_KEY` — 32 random bytes, separate from signing key
+- [ ] `BIFROST_CORS_ORIGINS` — set to Heimdall's exact origin, not `*`
+- [ ] `BIFROST_TOKEN_TTL` — consider reducing to `1h` for high-security environments
+- [ ] TLS terminated at load balancer / ingress — Bifrost runs plain HTTP internally
+- [ ] Redis protected with `requirepass` or VPC-only access
+- [ ] PostgreSQL — dedicated `bifrost` role with minimal privileges; SSL enabled
+- [ ] Verify `POST /v1/setup` returns 409 after bootstrap
+- [ ] Confirm logs do not capture `Authorization` or `X-API-Key` header values
+- [ ] Secrets rotation plan documented — key rotation invalidates all tokens
+
+---
+
+## 10. Decisions & Trade-offs (ADRs)
+
+### ADR-001: Dual-credential authentication (X-API-Key + Bearer token)
+
+**Status:** Accepted
+
+**Context:** Management endpoints need to identify both the user (for audit) and the org context (for resource scoping).
+
+**Decision:** Require two credentials — `X-API-Key` for user identity and a short-lived HMAC Bearer token for org context carrying `{userID, orgID, expiresAt}`.
+
+**Consequences:**
+- ✅ Org context derived from token without a DB lookup on every request
+- ✅ Revoking an API key immediately blocks access even with a valid token
+- ✅ Tokens can be short-lived without frequent re-authentication (`/token/refresh`)
+- ❌ Clients must manage two credentials
+- ❌ No per-request org switching without a new token
+
+---
+
+### ADR-002: HMAC-SHA256 tokens over JWT
+
+**Status:** Accepted
+
+**Decision:** Keep custom HMAC tokens. Do not adopt JWT.
+
+**Rationale:** No external dependencies; token format is internal; changing signing key immediately revokes all tokens. JWT adds complexity (header, claims, library surface) without benefit at this scale.
+
+**Consequences:**
+- ✅ Zero external library risk; minimal attack surface
+- ❌ Cannot be verified by third-party services without a custom plugin
+- ❌ No standard claims — migration required if federation is ever needed
+
+---
+
+### ADR-003: In-memory store as first-class runtime mode
+
+**Status:** Accepted
+
+**Decision:** Maintain `MemoryStore` permanently (not just for tests). Server starts in-memory when no `POSTGRES_DSN` is set.
+
+**Consequences:**
+- ✅ Zero-config local development; fast hermetic tests
+- ❌ State lost on restart
+- ❌ Dual implementation maintenance cost on every new store method
+
+---
+
+### ADR-004: Async usage tracking via buffered channel
+
+**Status:** Accepted (Epic 3)
+
+**Decision:** Proxy emits `UsageEvent` to a buffered channel (`cap=1000`). Background worker batch-inserts into PostgreSQL.
+
+**Rationale:** Best-effort durability is acceptable for usage metrics. Buffered channel is idiomatic Go, zero dependencies, zero proxy latency impact.
+
+**Consequences:**
+- ✅ Zero proxy latency impact; no new infrastructure
+- ❌ Events dropped on crash or buffer overflow (Prometheus counter tracks drops)
+- ❌ Not suitable if usage data drives hard billing cutoffs
+
+---
+
+### ADR-005: Pluggable secret backend interface (Epic 4)
+
+**Status:** Proposed
+
+**Decision:** Introduce `SecretBackend` interface with `LocalBackend` (default) and `VaultBackend` implementations.
+
+**Consequences:**
+- ✅ No breaking change; existing deployments use `LocalBackend` by default
+- ✅ Vault unlocks dynamic secrets, lease rotation, and audit logs
+- ❌ Adds abstraction over what was previously a direct DB call
+
+---
+
+### ADR-006: JSON-RPC 2.0 for MCP server (Epic 2)
+
+**Status:** Proposed
+
+**Decision:** Implement `/mcp` as a standard JSON-RPC 2.0 endpoint per MCP specification. Expose `/mcp/sse` for streaming.
+
+**Consequences:**
+- ✅ Compatible with any MCP-compliant AI agent
+- ❌ JSON-RPC is verbose compared to REST for simple operations
+- ❌ SSE requires careful connection lifecycle management
+
+---
+
+### ADR-007: Heimdall as a separate repository
+
+**Status:** Accepted
+
+**Decision:** Heimdall is a separate private Next.js repo consuming Bifrost's OpenAPI spec via orval codegen.
+
+**Rationale:** Bifrost stays a pure Go project; clean API boundary; independent versioning and deployment.
+
+**Consequences:**
+- ✅ No Node.js build pipeline in this repo
+- ❌ Two repos to keep in sync; spec drift caught by `swagger-check` CI job
+
+---
+
+### ADR-008: GORM over raw SQL
+
+**Status:** Accepted
+
+**Decision:** Use GORM with PostgreSQL and SQLite drivers.
+
+**Rationale:** `AutoMigrate` at startup; single driver interface covers both dialects; `IsDuplicateError()` abstracts dialect-specific error codes.
+
+**Consequences:**
+- ✅ No migration files in early phases; SQLite support free
+- ❌ `AutoMigrate` unsafe for destructive changes — needs `golang-migrate` before Phase 3
+- ❌ Convention: keep queries explicit, avoid association preloading
+
+---
+
+### ADR-009: chi over gorilla/mux or stdlib ServeMux
+
+**Status:** Accepted
+
+**Decision:** Use `go-chi/chi v5`.
+
+**Rationale:** `gorilla/mux` is archived. chi uses stdlib `context`, is composable via `r.With(...)`, and has no external dependencies. gin/echo add convenience wrappers that conflict with the existing `writeError` + `json.NewEncoder` pattern.
+
+**Consequences:**
+- ✅ Stdlib-compatible handlers; no framework lock-in
+- ❌ No built-in binding/validation — deliberate; handled explicitly
+
+---
+
+### ADR-010: PostgreSQL + SQLite dual-database support
+
+**Status:** Accepted
+
+**Decision:** Support both via a single GORM `SQLStore`, selected by `BIFROST_DB`.
+
+**Consequences:**
+- ✅ New contributors run full stack with no Docker; fast hermetic integration tests
+- ❌ SQLite not suitable for multi-instance deployments
+- ❌ Schema differences can surface at edges — convention: avoid PostgreSQL-specific GORM features
+
+---
+
+### ADR-011: Cobra CLI wrapping the HTTP server
+
+**Status:** Accepted
+
+**Decision:** Wrap startup logic with `spf13/cobra` in `cmd/bifrost/`. Operational subcommands (`--migrate-only`, `--retention-job`) share the same binary.
+
+**Consequences:**
+- ✅ Single binary for all operational tasks; K8s Jobs invoke flags directly
+- ❌ Cobra adds ~1MB to binary size — negligible
+
+---
+
+### ADR-012: Stateless tokens — no revocation store
+
+**Status:** Accepted (with known trade-off)
+
+**Decision:** No token blocklist. Emergency revocation via `BIFROST_SIGNING_KEY` rotation (invalidates all tokens instantly).
+
+**Consequences:**
+- ✅ No Redis required for auth; horizontal scaling with no shared auth state
+- ❌ Compromised token valid until expiry — mitigated by short TTL
+
+---
+
+### ADR-013: zerolog over slog / zap
+
+**Status:** Accepted
+
+**Decision:** Use `rs/zerolog`.
+
+**Rationale:** Zero allocations on the hot path; built-in `console` mode via env var; chainable API. `log/slog` considered but adds boilerplate to achieve the same zero-alloc guarantee.
+
+**Consequences:**
+- ✅ No allocations in proxy logging path; `console` mode needs no code change
+- ❌ Not stdlib — one external logging dependency
+
+---
+
+### ADR-014: Prometheus over OpenTelemetry metrics
+
+**Status:** Accepted
+
+**Decision:** Use `prometheus/client_golang` directly. No OTel SDK for metrics.
+
+**Rationale:** Prometheus is the de facto K8s standard; scrape-based pull model works out of the box with pod annotations; OTel adds significant setup complexity without portability benefit at current scale. Traces will adopt OTel in Phase 3 with a Prometheus bridge for existing metrics.
+
+**Consequences:**
+- ✅ Zero-config scraping in Kubernetes
+- ❌ Vendor portability requires adding exporters later
+
+---
+
+### ADR-015: Opaque UUIDs over sequential IDs
+
+**Status:** Accepted
+
+**Decision:** All entity IDs generated via `utils.GenerateID()` (UUID v4).
+
+**Rationale:** No enumeration risk; no coordination needed between `MemoryStore` and `SQLStore`; IDs can be generated before DB insertion.
+
+**Consequences:**
+- ✅ Safe to expose in URLs and logs; generation is store-independent
+- ❌ 36-char strings vs. 4-byte int — negligible index size impact at current scale
+
+---
+
+### ADR-016: Defer OPA integration to Phase 3
+
+**Status:** Deferred
+
+**Decision:** Authorization remains hardcoded role checks. No OPA until there are >5 distinct authorization rules or a customer requirement for externally auditable policies.
+
+**Consequences:**
+- ✅ No new infrastructure; auth logic readable inline in handlers
+- ❌ New role or cross-resource rule requires code change and redeploy
+
+---
+
+### ADR-017: No JWT pass-through verification
+
+**Status:** Deferred
+
+**Decision:** Bifrost uses its own HMAC tokens exclusively. No customer JWT verification against a JWKS endpoint.
+
+**Rationale:** JWT verification (JWKS fetch, key rotation, claim validation) is significant complexity; consumers that need IdP integration can place an API gateway in front of Bifrost.
+
+**Consequences:**
+- ✅ No JWKS fetching, no token cache, no clock-skew handling
+- ❌ Cannot natively enforce IdP-gated proxy access
+
+---
+
+### ADR-018: Scope as a plain string over bitmask or enum
+
+**Status:** Accepted
+
+**Decision:** `VirtualKey.Scope` is a plain string matching `Service.Name`; wildcard `"*"` allows any service.
+
+**Rationale:** Services are user-defined — a bitmask or enum cannot cover arbitrary names without recompilation. Single string comparison at proxy time; self-documenting in logs.
+
+**Consequences:**
+- ✅ New services scopeable immediately; no code change required
+- ❌ No compile-time validation — invalid scopes return 403 at proxy time
+
+---
+
+### ADR-019: Single binary, no microservices split
+
+**Status:** Accepted
+
+**Decision:** All planes (management API, proxy, MCP, usage tracker, retention) run in one process, selected by startup flags.
+
+**Rationale:** Current traffic does not justify service-mesh overhead. Horizontal pod autoscaling handles mixed workloads adequately until load is measured.
+
+**Trigger for splitting:** Proxy throughput requires dedicated pods; compliance requires isolating secret backend access.
+
+**Consequences:**
+- ✅ One image, one deployment, one log stream; no inter-service network calls
+- ❌ Memory issue in one component (e.g., webhook dispatcher) affects the entire process
+
+---
+
 ## Appendix: Proxy Credential Injection
 
 `Service.CredentialHeader` controls how the root key is forwarded upstream:
