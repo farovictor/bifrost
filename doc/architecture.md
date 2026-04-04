@@ -1084,6 +1084,189 @@ The `/mcp` endpoint authenticates via `X-API-Key` only. MCP-issued virtual keys 
 | `"Authorization"` | `Authorization: Bearer <key>` |
 | any other value | `<value>: <key>` |
 
+## 11. Future Roadmap
+
+### 11.1 Epic Overview
+
+| Epic | Theme | Priority | Status |
+|------|-------|----------|--------|
+| Epic 1 | Production Hardening | High | In progress |
+| Epic 2 | AI Agent Native / MCP Server | High ⭐ | Planned |
+| Epic 3 | Spend & Usage Visibility | Medium | Planned |
+| Epic 4 | Vault Backend | Medium | Planned |
+| Epic 5 | Heimdall Integration | Medium | Planned |
+| Phase 3 | Platform Expansion | Low | Spike only |
+
+---
+
+### 11.2 Epic 1 — Production Hardening
+
+**Goal:** Make the current system production-safe before adding features.
+
+| Story | Description |
+|-------|-------------|
+| 1.1 | Docker Compose with setup-job |
+| 1.2 | GitHub Actions CI (test + build + swagger-check) |
+| 1.3 | AES-256-GCM encryption at rest for root keys |
+| 1.4 | `--migrate-only` flag + K8s Job manifest |
+| 1.5 | Deployment docs (Docker Compose + K8s + Helm) |
+
+**Key decisions pending:** encryption key rotation strategy; `golang-migrate` adoption vs. GORM `AutoMigrate`.
+
+---
+
+### 11.3 Epic 2 — AI Agent Native / MCP Server ⭐
+
+**Goal:** Expose Bifrost as an MCP-compatible tool server so AI agents can request and use virtual keys autonomously.
+
+```
+AI Agent (Claude, GPT, etc.)
+    │  JSON-RPC 2.0
+    ▼
+POST /mcp
+    ├── tools/list      → available tools
+    ├── tools/call      → get_key, create_key, list_services,
+    │                      revoke_key, list_rootkeys
+    └── resources/read  → service definitions (future)
+```
+
+| Story | Description |
+|-------|-------------|
+| 2.1 | JSON-RPC 2.0 dispatcher + tool registry |
+| 2.2 | `get_key` and `list_services` tools |
+| 2.3 | `create_key` and `revoke_key` tools |
+| 2.4 | SSE transport (`/mcp/sse`) |
+| 2.5 | MCP auth (API key) + rate limiting |
+
+**Spike needed:** MCP session lifecycle — stateless vs. stateful connection model for SSE transport.
+
+---
+
+### 11.4 Epic 3 — Spend & Usage Visibility
+
+**Goal:** Give operators visibility into proxy traffic, cost, and budget consumption.
+
+```
+Proxy Handler
+    │  UsageEvent (async)
+    ▼
+UsageTracker (buffered chan)
+    │  batch insert
+    ▼
+usage_events table (PostgreSQL)
+    │
+    ├── GET /v1/usage          → aggregated by key/service/org
+    ├── GET /v1/usage/events   → raw event stream (paginated)
+    └── Webhook dispatcher     → threshold alerts
+```
+
+| Story | Description |
+|-------|-------------|
+| 3.1 | UsageEvent model + async tracker + batch insert |
+| 3.2 | Usage query API (`/v1/usage`) |
+| 3.3 | Webhook config + delivery + HMAC signing |
+| 3.4 | Retention CronJob + `BIFROST_RETENTION_DAYS` |
+
+**Open question:** Token/cost attribution — parse upstream response bodies (latency + coupling risk) vs. caller-reporting (unreliable).
+
+---
+
+### 11.5 Epic 4 — Vault Backend
+
+**Goal:** Allow enterprises to store root keys in HashiCorp Vault instead of the local encrypted store.
+
+```
+BIFROST_SECRET_BACKEND=vault
+
+Proxy Handler
+    │  GetSecret(rootKeyID)
+    ▼
+VaultBackend
+    │  GET /v1/secret/data/{rootKeyID}
+    ▼
+HashiCorp Vault KV v2
+```
+
+| Story | Description |
+|-------|-------------|
+| 4.1 | `SecretBackend` interface + `LocalBackend` refactor |
+| 4.2 | `VaultBackend` implementation (KV v2) |
+| 4.3 | Vault K8s auth method integration |
+| 4.4 | Secret lease renewal + rotation hook |
+
+**Spike needed:** Vault dynamic secrets for upstream APIs (requires upstream support — not yet available for OpenAI).
+
+---
+
+### 11.6 Epic 5 — Heimdall Integration
+
+**Goal:** Keep Bifrost's OpenAPI contract stable and Heimdall's orval codegen always producing correct typed clients.
+
+| Story | Description |
+|-------|-------------|
+| 5.1 | `swagger-check` CI job blocks PRs with spec drift |
+| 5.2 | Heimdall updates to `POST /v1/setup` + typed user API |
+| 5.3 | Contract test suite (Heimdall → Bifrost against spec) |
+| 5.4 | Versioned spec endpoint (`/docs/openapi/v1.json`) |
+
+---
+
+### 11.7 Phase 3 — Platform Expansion (Spikes)
+
+Directional only — each requires a dedicated spike before story creation.
+
+#### Spike A: OpenTelemetry Traces
+
+Adopt OTel SDK for distributed tracing across the proxy handler. Bridge existing Prometheus metrics via `otelprometheus` to avoid dashboard breakage.
+
+#### Spike B: OPA Authorization
+
+Replace hardcoded role checks with Rego policies evaluated by an embedded OPA engine. Trigger: >5 distinct authorization rules or per-org policy customization requirement.
+
+#### Spike C: Kubernetes Operator + CRDs
+
+Define `BifrostVirtualKey`, `BifrostRootKey`, `BifrostService` CRDs. A controller reconciles CRD spec against the Bifrost API for GitOps-style credential management.
+
+#### Spike D: Multi-region Active-Active
+
+Replace single PostgreSQL primary with CockroachDB or Citus. Redis cluster with cross-region replication for rate limit counters.
+
+#### Spike E: Usage-based Billing Webhooks
+
+Extend Epic 3 webhooks to emit structured events compatible with Stripe Billing metered usage API.
+
+---
+
+### 11.8 Dependency Graph
+
+```
+Epic 1 (hardening) ── prerequisite for all other epics
+
+Epic 2 (MCP)    ─── independent
+Epic 3 (usage)  ─── independent
+Epic 4 (vault)  ─── independent
+
+Epic 5 (Heimdall) ── depends on Epic 1 (stable spec)
+
+Phase 3 Spike A (OTel)    ── after Epic 1
+Phase 3 Spike B (OPA)     ── after Epic 2
+Phase 3 Spike C (CRDs)    ── after Epic 2 + Epic 4
+Phase 3 Spike D (HA)      ── after Epic 3
+Phase 3 Spike E (billing) ── after Epic 3
+```
+
+---
+
+## Appendix: Proxy Credential Injection
+
+`Service.CredentialHeader` controls how the root key is forwarded upstream:
+
+| Value | Injected header |
+|-------|----------------|
+| `""` or `"X-API-Key"` | `X-API-Key: <key>` |
+| `"Authorization"` | `Authorization: Bearer <key>` |
+| any other value | `<value>: <key>` |
+
 ## Appendix: Roles
 
 | Role | Capabilities |
