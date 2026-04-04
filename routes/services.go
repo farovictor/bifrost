@@ -12,6 +12,20 @@ import (
 )
 
 // CreateService handles POST /services to store a new Service.
+//
+// @Summary      Create service
+// @Tags         services
+// @Accept       json
+// @Produce      json
+// @Param        body  body      services.Service  true  "Service to create"
+// @Success      201   {object}  services.Service
+// @Failure      400   {object}  ErrorResponse
+// @Failure      404   {object}  ErrorResponse  "root key not found"
+// @Failure      409   {object}  ErrorResponse  "service already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/services [post]
 func (s *Server) CreateService(w http.ResponseWriter, r *http.Request) {
 	var svc services.Service
 	if err := json.NewDecoder(r.Body).Decode(&svc); err != nil {
@@ -42,12 +56,35 @@ func (s *Server) CreateService(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListServices handles GET /services and returns all services.
+//
+// @Summary      List services
+// @Tags         services
+// @Produce      json
+// @Success      200  {array}   services.Service
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/services [get]
 func (s *Server) ListServices(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.ServiceStore.List())
 }
 
 // UpdateService handles PUT /services/{id} to replace a service.
+//
+// @Summary      Update service
+// @Tags         services
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string            true  "Service ID"
+// @Param        body  body      services.Service  true  "Updated service"
+// @Success      200   {object}  services.Service
+// @Failure      400   {object}  ErrorResponse  "invalid request or id mismatch"
+// @Failure      404   {object}  ErrorResponse  "service or root key not found"
+// @Failure      500   {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/services/{id} [put]
 func (s *Server) UpdateService(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var svc services.Service
@@ -84,6 +121,16 @@ func (s *Server) UpdateService(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteService handles DELETE /services/{id} to remove a service.
+//
+// @Summary      Delete service
+// @Tags         services
+// @Param        id   path      string  true  "Service ID"
+// @Success      204
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/services/{id} [delete]
 func (s *Server) DeleteService(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := s.ServiceStore.Delete(id); err != nil {

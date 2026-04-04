@@ -13,15 +13,41 @@ import (
 	"github.com/farovictor/bifrost/pkg/utils"
 )
 
+// CreateUserRequest is the payload for POST /v1/users.
+type CreateUserRequest struct {
+	Name    string `json:"name"     example:"Alice"`
+	Email   string `json:"email"    example:"alice@example.com"`
+	OrgID   string `json:"org_id"   example:""`
+	OrgName string `json:"org_name" example:"Acme"`
+	Role    string `json:"role"     example:"member"`
+}
+
+// CreateUserResponse is returned on successful user creation.
+type CreateUserResponse struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	APIKey string `json:"api_key"`
+	Token  string `json:"token"`
+}
+
 // CreateUser handles POST /users and generates an API key.
+//
+// @Summary      Create user
+// @Description  Creates a user and optionally joins or creates an organization. Returns the user and a signed bearer token.
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateUserRequest  true  "User creation request"
+// @Success      201   {object}  CreateUserResponse
+// @Failure      400   {object}  ErrorResponse
+// @Failure      404   {object}  ErrorResponse  "organization not found"
+// @Failure      409   {object}  ErrorResponse  "user already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/users [post]
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Name    string `json:"name"`
-		Email   string `json:"email"`
-		OrgID   string `json:"org_id"`
-		OrgName string `json:"org_name"`
-		Role    string `json:"role"`
-	}
+	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, "invalid request", http.StatusBadRequest)
 		return
@@ -118,6 +144,16 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken handles POST /token/refresh and issues a fresh 24h token.
+//
+// @Summary      Refresh bearer token
+// @Description  Accepts a valid bearer token and returns a new one with a fresh 24h expiry.
+// @Tags         users
+// @Produce      json
+// @Success      200  {object}  object  "New token: {\"token\":\"...\"}"
+// @Failure      401  {object}  ErrorResponse  "invalid or expired token"
+// @Failure      500  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/token/refresh [post]
 func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") {
@@ -151,6 +187,16 @@ func buildAuthToken(userID, orgID string) (string, error) {
 }
 
 // GetUserInfo handles GET /user and returns details about the authenticated user.
+//
+// @Summary      Get authenticated user
+// @Tags         users
+// @Produce      json
+// @Success      200  {object}  object  "User with orgs array"
+// @Failure      401  {object}  ErrorResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     BearerAuth
+// @Router       /v1/user [get]
 func (s *Server) GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 

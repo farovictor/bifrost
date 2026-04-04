@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/farovictor/bifrost/docs/swagger"
 	"github.com/farovictor/bifrost/config"
 	rl "github.com/farovictor/bifrost/middlewares"
 	"github.com/farovictor/bifrost/pkg/database"
@@ -20,6 +21,7 @@ import (
 	v1 "github.com/farovictor/bifrost/routes/v1"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -105,15 +107,27 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   config.CORSAllowedOrigins(),
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-API-Key"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 	r.Use(rl.LoggingMiddleware())
 	r.Use(rl.MetricsMiddleware())
 	r.Use(middleware.Recoverer)
 
 	r.Get("/healthz", routes.Healthz)
 	r.Get("/version", routes.Version)
+	r.Get("/docs/openapi.json", routes.OpenAPISpec)
+	r.Get("/docs/openapi.yaml", routes.OpenAPISpecYAML)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
+
+		// One-shot bootstrap — no auth, only works when no users exist
+		r.Post("/setup", srv.Setup)
 
 		// Endpoints that only require the auth token
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/users", srv.CreateUser)

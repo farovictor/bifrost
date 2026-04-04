@@ -13,6 +13,20 @@ import (
 )
 
 // CreateKey handles POST /keys and stores a new VirtualKey.
+//
+// @Summary      Create virtual key
+// @Tags         virtual-keys
+// @Accept       json
+// @Produce      json
+// @Param        body  body      keys.VirtualKey  true  "Virtual key to create"
+// @Success      201   {object}  keys.VirtualKey
+// @Failure      400   {object}  ErrorResponse  "invalid scope, rate_limit, or expires_at"
+// @Failure      404   {object}  ErrorResponse  "service not found"
+// @Failure      409   {object}  ErrorResponse  "key already exists"
+// @Failure      500   {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/keys [post]
 func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 	var k keys.VirtualKey
 	if err := json.NewDecoder(r.Body).Decode(&k); err != nil {
@@ -55,12 +69,31 @@ func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 }
 
 // ListKeys handles GET /keys and returns all VirtualKeys.
+//
+// @Summary      List virtual keys
+// @Tags         virtual-keys
+// @Produce      json
+// @Success      200  {array}   keys.VirtualKey
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/keys [get]
 func (s *Server) ListKeys(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.KeyStore.List())
 }
 
 // DeleteKey handles DELETE /keys/{id} and removes a VirtualKey.
+//
+// @Summary      Revoke virtual key
+// @Tags         virtual-keys
+// @Param        id   path      string  true  "Virtual key ID"
+// @Success      204
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/keys/{id} [delete]
 func (s *Server) DeleteKey(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := s.KeyStore.Delete(id); err != nil {

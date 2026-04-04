@@ -4,6 +4,7 @@ export BIFROST_SIGNING_KEY
 export BIFROST_PORT
 export REDIS_ADDR
 export POSTGRES_DSN
+export DATABASE_DSN
 
 # setup: Install Go 1.23.8 and project dependencies
 setup:
@@ -17,11 +18,15 @@ build:
 
 # run: Execute the main application using Go 1.23.8
 run:
-	BIFROST_LOG_FORMAT=console go run .
+	DATABASE_DSN= POSTGRES_DSN= BIFROST_LOG_FORMAT=console go run .
 
 test:
 	go test ./... -coverprofile=coverage.out
 	go tool cover -func=coverage.out
+
+# swagger: regenerate OpenAPI spec from handler annotations
+swagger:
+	swag init -g docs.go --parseDependency --parseInternal -o docs/swagger
 
 # compose-up: start Docker Compose environment
 compose-up:
