@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 // ServerPort returns the port the HTTP server should listen on.
@@ -154,6 +155,36 @@ func DBType() string {
 // It reads the BIFROST_MODE environment variable and may be empty if unset.
 func Mode() string {
 	return os.Getenv("BIFROST_MODE")
+}
+
+// CORSAllowedOrigins returns the list of origins allowed to make cross-origin
+// requests. It reads BIFROST_CORS_ORIGINS (comma-separated) and defaults to
+// allowing all origins ("*") when unset.
+func CORSAllowedOrigins() []string {
+	v := os.Getenv("BIFROST_CORS_ORIGINS")
+	if v == "" {
+		return []string{"*"}
+	}
+	var origins []string
+	for _, o := range splitTrim(v) {
+		if o != "" {
+			origins = append(origins, o)
+		}
+	}
+	return origins
+}
+
+func splitTrim(s string) []string {
+	var parts []string
+	start := 0
+	for i := 0; i <= len(s); i++ {
+		if i == len(s) || s[i] == ',' {
+			part := strings.TrimSpace(s[start:i])
+			parts = append(parts, part)
+			start = i + 1
+		}
+	}
+	return parts
 }
 
 // StaticAPIKey returns the static API key used for test or sqlite modes.

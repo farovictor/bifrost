@@ -18,6 +18,7 @@ type Store interface {
 	GetByEmail(email string) (User, error)
 	Delete(id string) error
 	Update(User) error
+	Count() (int64, error)
 }
 
 // MemoryStore holds users in memory with concurrency safety.
@@ -110,6 +111,13 @@ func (s *MemoryStore) Delete(id string) error {
 	return nil
 }
 
+// Count returns the total number of users in the store.
+func (s *MemoryStore) Count() (int64, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return int64(len(s.users)), nil
+}
+
 // Update replaces an existing user.
 func (s *MemoryStore) Update(u User) error {
 	s.mu.Lock()
@@ -186,6 +194,15 @@ func (s *SQLStore) Delete(id string) error {
 		return ErrUserNotFound
 	}
 	return nil
+}
+
+// Count returns the total number of users in the database.
+func (s *SQLStore) Count() (int64, error) {
+	var count int64
+	if err := s.db.Model(&User{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // Update modifies an existing user.

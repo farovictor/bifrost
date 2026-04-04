@@ -973,6 +973,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/setup": {
+            "post": {
+                "description": "Creates the first admin user and organization. Returns 409 if the system is already initialized. No authentication required.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "setup"
+                ],
+                "summary": "Bootstrap Bifrost",
+                "parameters": [
+                    {
+                        "description": "Bootstrap request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.SetupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/routes.SetupResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "missing required fields",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "already initialized",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/token/refresh": {
             "post": {
                 "security": [
@@ -1077,15 +1129,15 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/routes.CreateUserRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "User with token field",
+                        "description": "Created",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/routes.CreateUserResponse"
                         }
                     },
                     "400": {
@@ -1201,12 +1253,94 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.CreateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "alice@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Alice"
+                },
+                "org_id": {
+                    "type": "string",
+                    "example": ""
+                },
+                "org_name": {
+                    "type": "string",
+                    "example": "Acme"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "member"
+                }
+            }
+        },
+        "routes.CreateUserResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "routes.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
                     "example": "not found"
+                }
+            }
+        },
+        "routes.SetupRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "admin@example.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Admin"
+                },
+                "org_name": {
+                    "type": "string",
+                    "example": "My Org"
+                }
+            }
+        },
+        "routes.SetupResponse": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
                 }
             }
         },

@@ -40,10 +40,66 @@ definitions:
       id:
         type: string
     type: object
+  routes.CreateUserRequest:
+    properties:
+      email:
+        example: alice@example.com
+        type: string
+      name:
+        example: Alice
+        type: string
+      org_id:
+        example: ""
+        type: string
+      org_name:
+        example: Acme
+        type: string
+      role:
+        example: member
+        type: string
+    type: object
+  routes.CreateUserResponse:
+    properties:
+      api_key:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      token:
+        type: string
+    type: object
   routes.ErrorResponse:
     properties:
       error:
         example: not found
+        type: string
+    type: object
+  routes.SetupRequest:
+    properties:
+      email:
+        example: admin@example.com
+        type: string
+      name:
+        example: Admin
+        type: string
+      org_name:
+        example: My Org
+        type: string
+    type: object
+  routes.SetupResponse:
+    properties:
+      api_key:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      token:
         type: string
     type: object
   services.Service:
@@ -649,6 +705,41 @@ paths:
       summary: Update service
       tags:
       - services
+  /v1/setup:
+    post:
+      consumes:
+      - application/json
+      description: Creates the first admin user and organization. Returns 409 if the
+        system is already initialized. No authentication required.
+      parameters:
+      - description: Bootstrap request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.SetupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.SetupResponse'
+        "400":
+          description: missing required fields
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "409":
+          description: already initialized
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      summary: Bootstrap Bifrost
+      tags:
+      - setup
   /v1/token/refresh:
     post:
       description: Accepts a valid bearer token and returns a new one with a fresh
@@ -711,14 +802,14 @@ paths:
         name: body
         required: true
         schema:
-          type: object
+          $ref: '#/definitions/routes.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: User with token field
+          description: Created
           schema:
-            type: object
+            $ref: '#/definitions/routes.CreateUserResponse'
         "400":
           description: Bad Request
           schema:
