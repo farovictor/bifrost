@@ -33,6 +33,10 @@ func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
+	if k.ID == "" || k.Target == "" {
+		writeError(w, "id and target are required", http.StatusBadRequest)
+		return
+	}
 	if !keys.ValidateScope(k.Scope) {
 		writeError(w, "invalid scope", http.StatusBadRequest)
 		return

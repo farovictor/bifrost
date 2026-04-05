@@ -141,6 +141,38 @@ func TestCreateKeyEmptyScope(t *testing.T) {
 	}
 }
 
+func TestCreateKeyBlankID(t *testing.T) {
+	env := newTestEnv(t)
+	k := keys.VirtualKey{ID: "", Scope: "read", Target: "svc", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
+	body, _ := json.Marshal(k)
+	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	env.Authorize(req)
+	rr := httptest.NewRecorder()
+	env.Router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rr.Code)
+	}
+	if msg := errorBody(t, rr); msg != "id and target are required" {
+		t.Fatalf("unexpected error: %s", msg)
+	}
+}
+
+func TestCreateKeyBlankTarget(t *testing.T) {
+	env := newTestEnv(t)
+	k := keys.VirtualKey{ID: "vk-notarget", Scope: "read", Target: "", ExpiresAt: time.Now().Add(time.Hour), RateLimit: 1}
+	body, _ := json.Marshal(k)
+	req := httptest.NewRequest(http.MethodPost, "/v1/keys", bytes.NewReader(body))
+	env.Authorize(req)
+	rr := httptest.NewRecorder()
+	env.Router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", rr.Code)
+	}
+	if msg := errorBody(t, rr); msg != "id and target are required" {
+		t.Fatalf("unexpected error: %s", msg)
+	}
+}
+
 func TestCreateKeyPastExpiration(t *testing.T) {
 	env := newTestEnv(t)
 	rk := rootkeys.RootKey{ID: "rk-exp", APIKey: "k"}
