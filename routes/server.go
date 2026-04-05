@@ -8,6 +8,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 	"github.com/farovictor/bifrost/pkg/users"
 )
 
@@ -19,6 +20,7 @@ type Server struct {
 	ServiceStore    services.Store
 	OrgStore        orgs.Store
 	MembershipStore orgs.MembershipStore
+	UsageStore      usage.Store
 }
 
 // ErrorResponse is the standard error body returned by all endpoints.

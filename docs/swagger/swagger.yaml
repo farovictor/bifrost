@@ -138,6 +138,15 @@ definitions:
         type: string
       result: {}
     type: object
+  routes.usageListResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/usage.Event'
+        type: array
+      total:
+        type: integer
+    type: object
   services.Service:
     properties:
       credential_header:
@@ -148,6 +157,27 @@ definitions:
         type: string
       root_key_id:
         type: string
+    type: object
+  usage.Event:
+    properties:
+      completion_tokens:
+        type: integer
+      id:
+        type: integer
+      key_id:
+        type: string
+      latency_ms:
+        type: integer
+      prompt_tokens:
+        type: integer
+      service:
+        type: string
+      status_code:
+        type: integer
+      timestamp:
+        type: string
+      total_tokens:
+        type: integer
     type: object
 host: localhost:3333
 info:
@@ -308,6 +338,51 @@ paths:
       - ApiKeyAuth: []
       - BearerAuth: []
       summary: Revoke virtual key
+      tags:
+      - virtual-keys
+  /v1/keys/{id}/usage:
+    get:
+      parameters:
+      - description: Virtual key ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Start time (RFC3339)
+        in: query
+        name: from
+        type: string
+      - description: End time (RFC3339)
+        in: query
+        name: to
+        type: string
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 20)
+        in: query
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.usageListResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List usage events for a virtual key
       tags:
       - virtual-keys
   /v1/orgs:

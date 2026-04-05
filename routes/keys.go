@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -10,6 +11,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 )
 
 // CreateKey handles POST /keys and stores a new VirtualKey.
@@ -85,6 +87,74 @@ func (s *Server) CreateKey(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListKeys(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(s.KeyStore.List())
+}
+
+// usageListResponse is the envelope returned by the usage list endpoint.
+type usageListResponse struct {
+	Events []usage.Event `json:"events"`
+	Total  int64         `json:"total"`
+}
+
+// ListKeyUsage handles GET /keys/{id}/usage. Returns paginated usage events for
+// the given virtual key, optionally filtered by ?from= and ?to= (RFC3339).
+//
+// @Summary      List usage events for a virtual key
+// @Tags         virtual-keys
+// @Produce      json
+// @Param        id       path      string  true  "Virtual key ID"
+// @Param        from     query     string  false "Start time (RFC3339)"
+// @Param        to       query     string  false "End time (RFC3339)"
+// @Param        page     query     int     false "Page number (default 1)"
+// @Param        per_page query     int     false "Page size (default 20)"
+// @Success      200  {object}  usageListResponse
+// @Failure      404  {object}  ErrorResponse
+// @Failure      500  {object}  ErrorResponse
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /v1/keys/{id}/usage [get]
+func (s *Server) ListKeyUsage(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if _, err := s.KeyStore.Get(id); err != nil {
+		if err == keys.ErrKeyNotFound {
+			writeError(w, "not found", http.StatusNotFound)
+			return
+		}
+		writeError(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	var from, to time.Time
+	if v := r.URL.Query().Get("from"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			writeError(w, "invalid from: use RFC3339", http.StatusBadRequest)
+			return
+		}
+		from = t
+	}
+	if v := r.URL.Query().Get("to"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			writeError(w, "invalid to: use RFC3339", http.StatusBadRequest)
+			return
+		}
+		to = t
+	}
+
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+
+	events, total, err := s.UsageStore.List(id, from, to, page, perPage)
+	if err != nil {
+		writeError(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	if events == nil {
+		events = []usage.Event{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(usageListResponse{Events: events, Total: total})
 }
 
 // DeleteKey handles DELETE /keys/{id} and removes a VirtualKey.

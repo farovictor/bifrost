@@ -16,6 +16,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 	v1 "github.com/farovictor/bifrost/routes/v1"
@@ -66,6 +67,7 @@ func main() {
 			&services.Service{},
 			&orgs.Organization{},
 			&orgs.Membership{},
+			&usage.Event{},
 		); err != nil {
 			logging.Logger.Fatal().Err(err).Msg("auto migrate")
 		}
@@ -98,6 +100,7 @@ func main() {
 				ServiceStore:    services.NewMemoryStore(),
 				OrgStore:        orgs.NewMemoryStore(),
 				MembershipStore: orgs.NewMemoryMembershipStore(),
+				UsageStore:      usage.NewMemoryStore(),
 			}
 			logging.Logger.Info().Msg("In-Memory Store set")
 		} else {
@@ -112,6 +115,7 @@ func main() {
 				ServiceStore:    services.NewSQLStore(db),
 				OrgStore:        orgs.NewSQLStore(db),
 				MembershipStore: orgs.NewSQLMembershipStore(db),
+				UsageStore:      usage.NewSQLStore(db),
 			}
 			logging.Logger.Info().Str("db", dbType).Msg("Store set")
 		}
@@ -123,6 +127,7 @@ func main() {
 			ServiceStore:    services.NewMemoryStore(),
 			OrgStore:        orgs.NewMemoryStore(),
 			MembershipStore: orgs.NewMemoryMembershipStore(),
+			UsageStore:      usage.NewMemoryStore(),
 		}
 		logging.Logger.Info().Msg("In-Memory Store set")
 	}
@@ -131,6 +136,7 @@ func main() {
 		KeyStore:     srv.KeyStore,
 		ServiceStore: srv.ServiceStore,
 		RootKeyStore: srv.RootKeyStore,
+		UsageStore:   srv.UsageStore,
 	}
 
 	if config.MetricsEnabled() {
@@ -181,6 +187,7 @@ func main() {
 			r.Get("/keys", srv.ListKeys)
 			r.Post("/keys", srv.CreateKey)
 			r.Delete("/keys/{id}", srv.DeleteKey)
+			r.Get("/keys/{id}/usage", srv.ListKeyUsage)
 
 			r.Get("/rootkeys", srv.ListRootKeys)
 			r.Post("/rootkeys", srv.CreateRootKey)

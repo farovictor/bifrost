@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -12,7 +14,38 @@ import (
 	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 )
+
+// proxyRecorder captures the upstream response status code and optionally
+// buffers the body for token parsing, while still streaming to the client.
+type proxyRecorder struct {
+	http.ResponseWriter
+	code      int
+	body      bytes.Buffer
+	trackBody bool
+}
+
+func (r *proxyRecorder) WriteHeader(code int) {
+	r.code = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *proxyRecorder) Write(b []byte) (int, error) {
+	if r.trackBody {
+		r.body.Write(b)
+	}
+	return r.ResponseWriter.Write(b)
+}
+
+// upstreamUsage is the subset of an OpenAI-compatible response body we care about.
+type upstreamUsage struct {
+	Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens      int `json:"total_tokens"`
+	} `json:"usage"`
+}
 
 // Proxy forwards the request to the target service determined by the provided
 // virtual key. The key should be supplied via the X-Virtual-Key header.
@@ -114,7 +147,31 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 		h.KeyStore.Update(k.ID, k)
 	}
 
+	trackTokens := config.TrackTokens()
+	rec := &proxyRecorder{ResponseWriter: w, code: http.StatusOK, trackBody: trackTokens}
+
+	start := time.Now()
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.Host = target.Host
-	proxy.ServeHTTP(w, r)
+	proxy.ServeHTTP(rec, r)
+	latency := time.Since(start).Milliseconds()
+
+	if h.UsageStore != nil {
+		ev := usage.Event{
+			KeyID:      k.ID,
+			Timestamp:  time.Now(),
+			StatusCode: rec.code,
+			Service:    k.Target,
+			LatencyMS:  latency,
+		}
+		if trackTokens && rec.code == http.StatusOK {
+			var body upstreamUsage
+			if err := json.Unmarshal(rec.body.Bytes(), &body); err == nil {
+				ev.PromptTokens = body.Usage.PromptTokens
+				ev.CompletionTokens = body.Usage.CompletionTokens
+				ev.TotalTokens = body.Usage.TotalTokens
+			}
+		}
+		h.UsageStore.Record(ev) //nolint:errcheck
+	}
 }

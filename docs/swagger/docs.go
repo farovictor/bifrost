@@ -263,6 +263,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/keys/{id}/usage": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "virtual-keys"
+                ],
+                "summary": "List usage events for a virtual key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Virtual key ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start time (RFC3339)",
+                        "name": "from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End time (RFC3339)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 20)",
+                        "name": "per_page",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.usageListResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/orgs": {
             "get": {
                 "security": [
@@ -1443,6 +1515,20 @@ const docTemplate = `{
                 "result": {}
             }
         },
+        "routes.usageListResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/usage.Event"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "services.Service": {
             "type": "object",
             "properties": {
@@ -1457,6 +1543,38 @@ const docTemplate = `{
                 },
                 "root_key_id": {
                     "type": "string"
+                }
+            }
+        },
+        "usage.Event": {
+            "type": "object",
+            "properties": {
+                "completion_tokens": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key_id": {
+                    "type": "string"
+                },
+                "latency_ms": {
+                    "type": "integer"
+                },
+                "prompt_tokens": {
+                    "type": "integer"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "total_tokens": {
+                    "type": "integer"
                 }
             }
         }

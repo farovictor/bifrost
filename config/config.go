@@ -197,6 +197,27 @@ func StaticAPIKey() string {
 	return key
 }
 
+// TrackTokens reports whether token counting is enabled via BIFROST_TRACK_TOKENS=true.
+func TrackTokens() bool {
+	switch os.Getenv("BIFROST_TRACK_TOKENS") {
+	case "1", "true", "TRUE", "True", "yes", "YES":
+		return true
+	default:
+		return false
+	}
+}
+
+// UsageRetentionDays returns the number of days usage events are retained.
+// Reads BIFROST_USAGE_RETENTION_DAYS and defaults to 30.
+func UsageRetentionDays() int {
+	if v := os.Getenv("BIFROST_USAGE_RETENTION_DAYS"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			return i
+		}
+	}
+	return 30
+}
+
 // EncryptionKey returns the raw 32-byte AES-256 key used to encrypt root key
 // values at rest. Reads BIFROST_ENCRYPTION_KEY (hex or raw). Returns nil when
 // the variable is unset — callers must treat nil as "encryption disabled".

@@ -18,6 +18,7 @@ func setupRouter(s *routes.Server) http.Handler {
 		KeyStore:     s.KeyStore,
 		ServiceStore: s.ServiceStore,
 		RootKeyStore: s.RootKeyStore,
+		UsageStore:   s.UsageStore,
 	}
 	r := chi.NewRouter()
 	r.Get("/healthz", routes.Healthz)
@@ -37,6 +38,7 @@ func setupRouter(s *routes.Server) http.Handler {
 			r.Get("/keys", s.ListKeys)
 			r.Post("/keys", s.CreateKey)
 			r.Delete("/keys/{id}", s.DeleteKey)
+			r.Get("/keys/{id}/usage", s.ListKeyUsage)
 			r.Get("/rootkeys", s.ListRootKeys)
 			r.Post("/rootkeys", s.CreateRootKey)
 			r.Put("/rootkeys/{id}", s.UpdateRootKey)
