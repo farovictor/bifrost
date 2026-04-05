@@ -77,6 +77,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/mcp": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "JSON-RPC 2.0 endpoint implementing the Model Context Protocol. Supports initialize, tools/list, and tools/call methods.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mcp"
+                ],
+                "summary": "MCP server",
+                "parameters": [
+                    {
+                        "description": "JSON-RPC 2.0 request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.mcpRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.mcpResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/keys": {
             "get": {
                 "security": [
@@ -1345,6 +1390,48 @@ const docTemplate = `{
                 "token": {
                     "type": "string"
                 }
+            }
+        },
+        "routes.mcpError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.mcpRequest": {
+            "type": "object",
+            "properties": {
+                "id": {},
+                "jsonrpc": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "routes.mcpResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/routes.mcpError"
+                },
+                "id": {},
+                "jsonrpc": {
+                    "type": "string"
+                },
+                "result": {}
             }
         },
         "services.Service": {
