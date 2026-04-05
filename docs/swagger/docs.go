@@ -1250,6 +1250,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "key_hint": {
+                    "type": "string"
                 }
             }
         },

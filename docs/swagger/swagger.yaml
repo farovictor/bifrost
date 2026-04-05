@@ -39,6 +39,8 @@ definitions:
         type: string
       id:
         type: string
+      key_hint:
+        type: string
     type: object
   routes.CreateUserRequest:
     properties:
