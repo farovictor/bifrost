@@ -168,7 +168,7 @@ func main() {
 		r.Post("/token/refresh", srv.RefreshToken)
 
 		// Proxy - authenticated by the virtual key; no API key or token required
-		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/{rest:.*}", http.HandlerFunc(v1h.Proxy))
+		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/*", http.HandlerFunc(v1h.Proxy))
 
 		// Endpoints requiring API key and auth token
 		r.Group(func(r chi.Router) {
