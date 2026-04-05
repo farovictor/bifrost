@@ -1245,6 +1245,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "one_shot": {
+                    "type": "boolean"
+                },
                 "rate_limit": {
                     "type": "integer"
                 },
@@ -1256,6 +1259,9 @@ const docTemplate = `{
                 },
                 "target": {
                     "type": "string"
+                },
+                "used": {
+                    "type": "boolean"
                 }
             }
         },

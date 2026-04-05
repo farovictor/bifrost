@@ -77,6 +77,7 @@ var availableTools = []mcpTool{
 				"service_name": {Type: "string", Description: "ID of the target service"},
 				"ttl_seconds":  {Type: "integer", Description: "Key lifetime in seconds (default 3600)"},
 				"rate_limit":   {Type: "integer", Description: "Max requests per minute (default 60)"},
+				"one_shot":     {Type: "boolean", Description: "If true, key is invalidated after first use"},
 			},
 			Required: []string{"service_name"},
 		},
@@ -163,6 +164,7 @@ func (s *Server) mcpRequestKey(w http.ResponseWriter, id any, raw json.RawMessag
 		ServiceName string `json:"service_name"`
 		TTLSeconds  int    `json:"ttl_seconds"`
 		RateLimit   int    `json:"rate_limit"`
+		OneShot     bool   `json:"one_shot"`
 	}
 	if err := json.Unmarshal(raw, &args); err != nil {
 		writeMCPError(w, id, mcpErrInvalid, "invalid arguments")
@@ -196,6 +198,7 @@ func (s *Server) mcpRequestKey(w http.ResponseWriter, id any, raw json.RawMessag
 		ExpiresAt: expiresAt,
 		RateLimit: args.RateLimit,
 		Source:    keys.SourceMCP,
+		OneShot:   args.OneShot,
 	}
 	if err := s.KeyStore.Create(k); err != nil {
 		writeMCPError(w, id, mcpErrInternal, "failed to issue key")

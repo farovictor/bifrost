@@ -388,3 +388,28 @@ func TestProxyNoAgentIDForRegularKey(t *testing.T) {
 		t.Errorf("X-Bifrost-Agent-ID should not be set for non-MCP keys, got %q", capturedAgentID)
 	}
 }
+
+func TestMCPRequestKeyOneShot(t *testing.T) {
+	env := newTestEnv(t)
+	seedService(t, env, "svc-oneshot")
+
+	resp := mcpCall(t, env, map[string]any{
+		"jsonrpc": "2.0",
+		"id":      20,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      "request_key",
+			"arguments": map[string]any{"service_name": "svc-oneshot", "one_shot": true},
+		},
+	})
+
+	result := resp["result"].(map[string]any)
+	vk := result["virtual_key"].(string)
+	k, err := env.Server.KeyStore.Get(vk)
+	if err != nil {
+		t.Fatalf("key not found: %v", err)
+	}
+	if !k.OneShot {
+		t.Error("expected one_shot=true on MCP-issued key")
+	}
+}
