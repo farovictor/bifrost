@@ -196,3 +196,18 @@ func StaticAPIKey() string {
 	}
 	return key
 }
+
+// EncryptionKey returns the raw 32-byte AES-256 key used to encrypt root key
+// values at rest. Reads BIFROST_ENCRYPTION_KEY (hex or raw). Returns nil when
+// the variable is unset — callers must treat nil as "encryption disabled".
+func EncryptionKey() []byte {
+	raw := os.Getenv("BIFROST_ENCRYPTION_KEY")
+	if raw == "" {
+		return nil
+	}
+	b := []byte(raw)
+	if len(b) != 32 {
+		return nil
+	}
+	return b
+}

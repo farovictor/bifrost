@@ -30,6 +30,12 @@ func (s *Server) CreateRootKey(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "invalid request", http.StatusBadRequest)
 		return
 	}
+	if k.ID == "" || k.APIKey == "" {
+		writeError(w, "id and api_key are required", http.StatusBadRequest)
+		return
+	}
+	// Capture hint before the store encrypts and clears APIKey.
+	plaintext := k.APIKey
 	if err := s.RootKeyStore.Create(k); err != nil {
 		switch err {
 		case rootkeys.ErrKeyExists:
@@ -42,7 +48,11 @@ func (s *Server) CreateRootKey(w http.ResponseWriter, r *http.Request) {
 	logging.Logger.Info().Str("root_key_id", k.ID).Msg("created root key")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(k)
+	// Return api_key once so the caller can verify — it will not appear again.
+	json.NewEncoder(w).Encode(struct {
+		ID     string `json:"id"`
+		APIKey string `json:"api_key"`
+	}{ID: k.ID, APIKey: plaintext})
 }
 
 // ListRootKeys handles GET /rootkeys and returns all root keys.
@@ -124,6 +134,5 @@ func (s *Server) UpdateRootKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logging.Logger.Info().Str("root_key_id", k.ID).Msg("updated root key")
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(k)
+	w.WriteHeader(http.StatusNoContent)
 }
