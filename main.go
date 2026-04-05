@@ -41,11 +41,36 @@ func main() {
 		config.Mode(),
 		"application mode. Flag takes precedence over BIFROST_MODE",
 	)
+	migrateOnly := flag.Bool(
+		"migrate-only",
+		false,
+		"run database migrations and exit",
+	)
 	flag.Parse()
 	os.Setenv("BIFROST_DB", *dbFlag)
 	os.Setenv("BIFROST_MODE", *modeFlag)
 	if config.Mode() == "test" {
 		os.Setenv("BIFROST_DB", "sqlite")
+	}
+
+	if *migrateOnly {
+		dsn := config.PostgresDSN()
+		db, err := database.Connect(config.DBType(), dsn)
+		if err != nil {
+			logging.Logger.Fatal().Err(err).Msg("connect for migration")
+		}
+		if err := db.AutoMigrate(
+			&users.User{},
+			&keys.VirtualKey{},
+			&rootkeys.RootKey{},
+			&services.Service{},
+			&orgs.Organization{},
+			&orgs.Membership{},
+		); err != nil {
+			logging.Logger.Fatal().Err(err).Msg("auto migrate")
+		}
+		logging.Logger.Info().Msg("migrations complete")
+		return
 	}
 
 	dsn := config.PostgresDSN()
