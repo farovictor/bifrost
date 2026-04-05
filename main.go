@@ -154,6 +154,7 @@ func main() {
 	r.Get("/version", routes.Version)
 	r.Get("/docs/openapi.json", routes.OpenAPISpec)
 	r.Get("/docs/openapi.yaml", routes.OpenAPISpecYAML)
+	r.With(rl.AuthMiddleware(srv.UserStore)).Post("/mcp", srv.MCP)
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
