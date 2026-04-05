@@ -85,6 +85,13 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if k.TokenBudget > 0 && h.UsageStore != nil {
+		if h.UsageStore.TotalTokens(k.ID) >= k.TokenBudget {
+			writeError(w, "token budget exceeded", http.StatusTooManyRequests)
+			return
+		}
+	}
+
 	if config.MetricsEnabled() {
 		metrics.KeyUsageTotal.WithLabelValues(k.ID).Inc()
 	}

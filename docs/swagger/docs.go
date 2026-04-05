@@ -1332,6 +1332,9 @@ const docTemplate = `{
                 "target": {
                     "type": "string"
                 },
+                "token_budget": {
+                    "type": "integer"
+                },
                 "used": {
                     "type": "boolean"
                 }
