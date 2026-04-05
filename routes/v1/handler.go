@@ -7,6 +7,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 )
 
 // injectCredential sets the appropriate header on r based on credentialHeader.
@@ -29,6 +30,7 @@ type Handler struct {
 	KeyStore     keys.Store
 	ServiceStore services.Store
 	RootKeyStore rootkeys.Store
+	UsageStore   usage.Store
 }
 
 func writeError(w http.ResponseWriter, message string, code int) {

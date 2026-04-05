@@ -10,6 +10,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
+	"github.com/farovictor/bifrost/pkg/usage"
 	"github.com/farovictor/bifrost/pkg/users"
 	routes "github.com/farovictor/bifrost/routes"
 )
@@ -24,6 +25,7 @@ func newTestServer(t *testing.T) *routes.Server {
 		ServiceStore:    services.NewMemoryStore(),
 		OrgStore:        orgs.NewMemoryStore(),
 		MembershipStore: orgs.NewMemoryMembershipStore(),
+		UsageStore:      usage.NewMemoryStore(),
 	}
 }
 
