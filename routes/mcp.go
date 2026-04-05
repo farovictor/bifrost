@@ -2,8 +2,12 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/version"
 )
 
@@ -147,10 +151,61 @@ func (s *Server) mcpToolsCall(w http.ResponseWriter, req mcpRequest) {
 	case "list_services":
 		s.mcpListServices(w, req.ID)
 	case "request_key":
-		writeMCPError(w, req.ID, mcpErrNotFound, "request_key not yet implemented")
+		s.mcpRequestKey(w, req.ID, params.Arguments)
 	default:
 		writeMCPError(w, req.ID, mcpErrNotFound, "unknown tool: "+params.Name)
 	}
+}
+
+// mcpRequestKey implements the request_key MCP tool (Story 2.2).
+func (s *Server) mcpRequestKey(w http.ResponseWriter, id any, raw json.RawMessage) {
+	var args struct {
+		ServiceName string `json:"service_name"`
+		TTLSeconds  int    `json:"ttl_seconds"`
+		RateLimit   int    `json:"rate_limit"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		writeMCPError(w, id, mcpErrInvalid, "invalid arguments")
+		return
+	}
+	if args.ServiceName == "" {
+		writeMCPError(w, id, mcpErrInvalid, "service_name is required")
+		return
+	}
+	if args.TTLSeconds <= 0 {
+		args.TTLSeconds = 3600
+	}
+	if args.RateLimit <= 0 {
+		args.RateLimit = 60
+	}
+
+	if _, err := s.ServiceStore.Get(args.ServiceName); err != nil {
+		if err == services.ErrServiceNotFound {
+			writeMCPError(w, id, mcpErrInvalid, "service not found: "+args.ServiceName)
+			return
+		}
+		writeMCPError(w, id, mcpErrInternal, "internal error")
+		return
+	}
+
+	expiresAt := time.Now().Add(time.Duration(args.TTLSeconds) * time.Second)
+	k := keys.VirtualKey{
+		ID:        fmt.Sprintf("mcp-%d", time.Now().UnixNano()),
+		Target:    args.ServiceName,
+		Scope:     keys.ScopeWrite,
+		ExpiresAt: expiresAt,
+		RateLimit: args.RateLimit,
+		Source:    keys.SourceMCP,
+	}
+	if err := s.KeyStore.Create(k); err != nil {
+		writeMCPError(w, id, mcpErrInternal, "failed to issue key")
+		return
+	}
+
+	writeMCPResult(w, id, map[string]any{
+		"virtual_key": k.ID,
+		"expires_at":  expiresAt.UTC().Format(time.RFC3339),
+	})
 }
 
 // mcpListServices implements the list_services MCP tool (Story 2.3).

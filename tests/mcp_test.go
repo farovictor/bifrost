@@ -3,10 +3,14 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
 )
 
@@ -182,5 +186,205 @@ func TestMCPInvalidJSONRPCVersion(t *testing.T) {
 	})
 	if resp["error"] == nil {
 		t.Fatal("expected error for invalid jsonrpc version")
+	}
+}
+
+// seedService is a helper that creates a root key + service and returns the service ID.
+func seedService(t *testing.T, env *TestEnv, svcID string) {
+	t.Helper()
+	rk := rootkeys.RootKey{ID: "rk-" + svcID, APIKey: "real"}
+	env.Server.RootKeyStore.Create(rk)
+	svc := services.Service{ID: svcID, Endpoint: "https://api.example.com", RootKeyID: rk.ID}
+	if err := env.Server.ServiceStore.Create(svc); err != nil {
+		t.Fatalf("seed service: %v", err)
+	}
+}
+
+func TestMCPRequestKey(t *testing.T) {
+	env := newTestEnv(t)
+	seedService(t, env, "openai")
+
+	resp := mcpCall(t, env, map[string]any{
+		"jsonrpc": "2.0",
+		"id":      10,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      "request_key",
+			"arguments": map[string]any{"service_name": "openai"},
+		},
+	})
+
+	if resp["error"] != nil {
+		t.Fatalf("unexpected error: %v", resp["error"])
+	}
+	result := resp["result"].(map[string]any)
+	vk, ok := result["virtual_key"].(string)
+	if !ok || vk == "" {
+		t.Fatal("expected virtual_key in result")
+	}
+	if result["expires_at"] == nil {
+		t.Fatal("expected expires_at in result")
+	}
+
+	// Key must be stored and tagged as mcp source.
+	k, err := env.Server.KeyStore.Get(vk)
+	if err != nil {
+		t.Fatalf("issued key not found in store: %v", err)
+	}
+	if k.Source != keys.SourceMCP {
+		t.Errorf("expected source %q, got %q", keys.SourceMCP, k.Source)
+	}
+	if k.Target != "openai" {
+		t.Errorf("expected target 'openai', got %q", k.Target)
+	}
+}
+
+func TestMCPRequestKeyDefaults(t *testing.T) {
+	env := newTestEnv(t)
+	seedService(t, env, "svc-defaults")
+
+	resp := mcpCall(t, env, map[string]any{
+		"jsonrpc": "2.0",
+		"id":      11,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      "request_key",
+			"arguments": map[string]any{"service_name": "svc-defaults"},
+		},
+	})
+
+	result := resp["result"].(map[string]any)
+	vk := result["virtual_key"].(string)
+	k, _ := env.Server.KeyStore.Get(vk)
+
+	if k.RateLimit != 60 {
+		t.Errorf("expected default rate_limit 60, got %d", k.RateLimit)
+	}
+	// TTL default is 3600s — expires_at should be ~1h from now.
+	if time.Until(k.ExpiresAt) < 59*time.Minute {
+		t.Errorf("expected ~1h TTL, got %v", time.Until(k.ExpiresAt))
+	}
+}
+
+func TestMCPRequestKeyServiceNotFound(t *testing.T) {
+	env := newTestEnv(t)
+	resp := mcpCall(t, env, map[string]any{
+		"jsonrpc": "2.0",
+		"id":      12,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      "request_key",
+			"arguments": map[string]any{"service_name": "nonexistent"},
+		},
+	})
+	if resp["error"] == nil {
+		t.Fatal("expected error for nonexistent service")
+	}
+}
+
+func TestMCPRequestKeyMissingServiceName(t *testing.T) {
+	env := newTestEnv(t)
+	resp := mcpCall(t, env, map[string]any{
+		"jsonrpc": "2.0",
+		"id":      13,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name":      "request_key",
+			"arguments": map[string]any{},
+		},
+	})
+	if resp["error"] == nil {
+		t.Fatal("expected error for missing service_name")
+	}
+}
+
+func TestProxyInjectsKeyIDHeader(t *testing.T) {
+	env := newTestEnv(t)
+
+	var capturedKeyID string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedKeyID = r.Header.Get("X-Bifrost-Key-ID")
+		io.WriteString(w, "ok")
+	}))
+	defer backend.Close()
+
+	rk := rootkeys.RootKey{ID: "rk-hdr", APIKey: "real"}
+	env.Server.RootKeyStore.Create(rk)
+	svc := services.Service{ID: "svc-hdr", Endpoint: backend.URL, RootKeyID: rk.ID}
+	env.Server.ServiceStore.Create(svc)
+	k := keys.VirtualKey{ID: "vk-hdr", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100}
+	env.Server.KeyStore.Create(k)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/path", nil)
+	req.Header.Set("X-Virtual-Key", k.ID)
+	rr := httptest.NewRecorder()
+	env.Router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if capturedKeyID != k.ID {
+		t.Errorf("expected X-Bifrost-Key-ID %q, got %q", k.ID, capturedKeyID)
+	}
+}
+
+func TestProxyInjectsAgentIDForMCPKey(t *testing.T) {
+	env := newTestEnv(t)
+
+	var capturedAgentID, capturedKeyID string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedKeyID = r.Header.Get("X-Bifrost-Key-ID")
+		capturedAgentID = r.Header.Get("X-Bifrost-Agent-ID")
+		io.WriteString(w, "ok")
+	}))
+	defer backend.Close()
+
+	rk := rootkeys.RootKey{ID: "rk-mcp", APIKey: "real"}
+	env.Server.RootKeyStore.Create(rk)
+	svc := services.Service{ID: "svc-mcp", Endpoint: backend.URL, RootKeyID: rk.ID}
+	env.Server.ServiceStore.Create(svc)
+	k := keys.VirtualKey{ID: "vk-mcp-agent", Target: svc.ID, Scope: keys.ScopeWrite, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100, Source: keys.SourceMCP}
+	env.Server.KeyStore.Create(k)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/path", nil)
+	req.Header.Set("X-Virtual-Key", k.ID)
+	rr := httptest.NewRecorder()
+	env.Router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if capturedKeyID != k.ID {
+		t.Errorf("X-Bifrost-Key-ID: expected %q, got %q", k.ID, capturedKeyID)
+	}
+	if capturedAgentID != k.ID {
+		t.Errorf("X-Bifrost-Agent-ID: expected %q, got %q", k.ID, capturedAgentID)
+	}
+}
+
+func TestProxyNoAgentIDForRegularKey(t *testing.T) {
+	env := newTestEnv(t)
+
+	var capturedAgentID string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedAgentID = r.Header.Get("X-Bifrost-Agent-ID")
+		io.WriteString(w, "ok")
+	}))
+	defer backend.Close()
+
+	rk := rootkeys.RootKey{ID: "rk-reg", APIKey: "real"}
+	env.Server.RootKeyStore.Create(rk)
+	svc := services.Service{ID: "svc-reg", Endpoint: backend.URL, RootKeyID: rk.ID}
+	env.Server.ServiceStore.Create(svc)
+	k := keys.VirtualKey{ID: "vk-regular", Target: svc.ID, Scope: keys.ScopeRead, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100}
+	env.Server.KeyStore.Create(k)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/proxy/path", nil)
+	req.Header.Set("X-Virtual-Key", k.ID)
+	rr := httptest.NewRecorder()
+	env.Router.ServeHTTP(rr, req)
+
+	if capturedAgentID != "" {
+		t.Errorf("X-Bifrost-Agent-ID should not be set for non-MCP keys, got %q", capturedAgentID)
 	}
 }

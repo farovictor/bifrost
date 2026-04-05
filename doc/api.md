@@ -141,6 +141,51 @@ GET|POST|... /v1/proxy/{path}
 
 Bifrost validates the key, enforces scope and rate limit, strips the virtual key from the forwarded request, injects the root key credential (per `credential_header`), and proxies to the upstream service endpoint.
 
+### Injected headers
+
+Bifrost injects the following headers into every proxied request server-side. Consumers cannot spoof them.
+
+| Header | Present on | Value |
+|--------|-----------|-------|
+| `X-Bifrost-Key-ID` | All proxied requests | The virtual key ID used for this request |
+| `X-Bifrost-Agent-ID` | MCP-issued keys only | The virtual key ID (identifies the agent session) |
+
+These headers allow upstream services to attribute calls to specific keys or agent sessions without exposing real credentials.
+
+## MCP Server
+
+```
+POST /mcp
+  X-API-Key: <api_key>
+  Content-Type: application/json
+```
+
+JSON-RPC 2.0 endpoint implementing the [Model Context Protocol](https://modelcontextprotocol.io). Requires `X-API-Key` authentication.
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `initialize` | Handshake — returns protocol version, server name/version, capabilities |
+| `tools/list` | Returns all available MCP tools with input schemas |
+| `tools/call` | Invokes a named tool |
+
+### Tools
+
+**`list_services`** — List upstream services available for proxying.
+
+No arguments. Returns `services[]` with `name` and `base_url`. Credentials are never included.
+
+**`request_key`** — Issue a short-lived virtual key for a named service.
+
+| Argument | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `service_name` | string | Yes | — | ID of the target service |
+| `ttl_seconds` | integer | No | `3600` | Key lifetime in seconds |
+| `rate_limit` | integer | No | `60` | Max requests per minute |
+
+Returns `virtual_key` (key ID) and `expires_at`. The issued key appears in `GET /v1/keys` with `source: "mcp"`.
+
 ## Metrics
 
 When `BIFROST_ENABLE_METRICS=true`:
