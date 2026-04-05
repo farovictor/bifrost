@@ -171,9 +171,9 @@ curl -s http://localhost:3333/v1/proxy/get \
 
 | Goal | Where to look |
 |---|---|
+| Run in production | [deployment.md](deployment.md) — Docker Compose, reverse proxy, security checklist |
+| Bootstrap a real instance | [deployment.md](deployment.md#production-bootstrap-flow) — `POST /v1/setup` replaces manual curl |
 | Use a real database | [configuration.md](configuration.md) — PostgreSQL or SQLite setup |
-| Create real users and tokens | [api.md](api.md) — `POST /v1/users` |
-| Run with Docker Compose | [configuration.md](configuration.md) — Docker Compose section |
 | Full API reference | [api.md](api.md) |
 | CLI usage | [cli.md](cli.md) |
 | Code architecture | [architecture.md](architecture.md) |
