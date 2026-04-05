@@ -6,6 +6,8 @@ definitions:
         type: string
       id:
         type: string
+      one_shot:
+        type: boolean
       rate_limit:
         type: integer
       scope:
@@ -14,6 +16,8 @@ definitions:
         type: string
       target:
         type: string
+      used:
+        type: boolean
     type: object
   orgs.Membership:
     properties:

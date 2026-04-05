@@ -47,6 +47,11 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if k.OneShot && k.Used {
+		writeError(w, "key already used", http.StatusUnauthorized)
+		return
+	}
+
 	if config.MetricsEnabled() {
 		metrics.KeyUsageTotal.WithLabelValues(k.ID).Inc()
 	}
@@ -100,6 +105,13 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Bifrost-Key-ID", k.ID)
 	if k.Source == keys.SourceMCP {
 		r.Header.Set("X-Bifrost-Agent-ID", k.ID)
+	}
+
+	// Mark one-shot keys as used before forwarding — prevents replay even if
+	// the upstream returns an error.
+	if k.OneShot {
+		k.Used = true
+		h.KeyStore.Update(k.ID, k)
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)

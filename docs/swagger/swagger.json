@@ -1239,6 +1239,9 @@
                 "id": {
                     "type": "string"
                 },
+                "one_shot": {
+                    "type": "boolean"
+                },
                 "rate_limit": {
                     "type": "integer"
                 },
@@ -1250,6 +1253,9 @@
                 },
                 "target": {
                     "type": "string"
+                },
+                "used": {
+                    "type": "boolean"
                 }
             }
         },
