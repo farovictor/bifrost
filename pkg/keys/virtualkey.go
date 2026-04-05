@@ -10,6 +10,10 @@ type VirtualKey struct {
 	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
 	Target    string    `json:"target" gorm:"not null"`
 	RateLimit int       `json:"rate_limit" gorm:"not null"`
+	Source    string    `json:"source,omitempty" gorm:"size:16;default:''"`
 }
+
+// SourceMCP is the source label for keys issued via the MCP tool.
+const SourceMCP = "mcp"
 
 func (VirtualKey) TableName() string { return "virtual_keys" }

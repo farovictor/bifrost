@@ -1251,6 +1251,9 @@ const docTemplate = `{
                 "scope": {
                     "type": "string"
                 },
+                "source": {
+                    "type": "string"
+                },
                 "target": {
                     "type": "string"
                 }

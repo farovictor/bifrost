@@ -96,6 +96,12 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 
 	injectCredential(r, svc.CredentialHeader, rk.APIKey)
 
+	// Inject identity headers — server-side only, consumers cannot spoof these.
+	r.Header.Set("X-Bifrost-Key-ID", k.ID)
+	if k.Source == keys.SourceMCP {
+		r.Header.Set("X-Bifrost-Agent-ID", k.ID)
+	}
+
 	proxy := httputil.NewSingleHostReverseProxy(target)
 	r.Host = target.Host
 	proxy.ServeHTTP(w, r)
