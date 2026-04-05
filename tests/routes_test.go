@@ -22,6 +22,7 @@ func setupRouter(s *routes.Server) http.Handler {
 	r := chi.NewRouter()
 	r.Get("/healthz", routes.Healthz)
 	r.Get("/version", routes.Version)
+	r.With(rl.AuthMiddleware(s.UserStore)).Post("/mcp", s.MCP)
 	r.Route("/v1", func(r chi.Router) {
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/users", s.CreateUser)
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Get("/user", s.GetUserInfo)

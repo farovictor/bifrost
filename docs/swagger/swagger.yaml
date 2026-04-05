@@ -104,6 +104,34 @@ definitions:
       token:
         type: string
     type: object
+  routes.mcpError:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
+  routes.mcpRequest:
+    properties:
+      id: {}
+      jsonrpc:
+        type: string
+      method:
+        type: string
+      params:
+        items:
+          type: integer
+        type: array
+    type: object
+  routes.mcpResponse:
+    properties:
+      error:
+        $ref: '#/definitions/routes.mcpError'
+      id: {}
+      jsonrpc:
+        type: string
+      result: {}
+    type: object
   services.Service:
     properties:
       credential_header:
@@ -162,6 +190,35 @@ paths:
       summary: Health check
       tags:
       - health
+  /mcp:
+    post:
+      consumes:
+      - application/json
+      description: JSON-RPC 2.0 endpoint implementing the Model Context Protocol.
+        Supports initialize, tools/list, and tools/call methods.
+      parameters:
+      - description: JSON-RPC 2.0 request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/routes.mcpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.mcpResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: MCP server
+      tags:
+      - mcp
   /v1/keys:
     get:
       produces:
