@@ -79,6 +79,36 @@ func TestProxy(t *testing.T) {
 	}
 }
 
+func TestProxyMultiSegmentPath(t *testing.T) {
+	s := newTestServer(t)
+
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/chat/completions" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "ok")
+	}))
+	defer backend.Close()
+
+	rk := rootkeys.RootKey{ID: "rk-ms", APIKey: "real"}
+	s.RootKeyStore.Create(rk)
+	svc := services.Service{ID: "svc-ms", Endpoint: backend.URL, RootKeyID: rk.ID}
+	s.ServiceStore.Create(svc)
+	k := keys.VirtualKey{ID: "vk-ms", Target: svc.ID, Scope: keys.ScopeWrite, ExpiresAt: time.Now().Add(time.Hour), RateLimit: 100}
+	s.KeyStore.Create(k)
+
+	router := setupRouter(s)
+	req := httptest.NewRequest(http.MethodPost, "/v1/proxy/v1/chat/completions", nil)
+	req.Header.Set("X-Virtual-Key", k.ID)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d — multi-segment proxy path not routed correctly", rr.Code)
+	}
+}
+
 func TestProxyScopeEnforcement(t *testing.T) {
 	cases := []struct {
 		name     string
