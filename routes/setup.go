@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/users"
 	"github.com/farovictor/bifrost/pkg/utils"
@@ -86,7 +87,7 @@ func (s *Server) Setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := buildAuthToken(u.ID, o.ID)
+	token, err := buildAuthToken(u.ID, o.ID, config.TokenTTL())
 	if err != nil {
 		writeError(w, "internal error", http.StatusInternalServerError)
 		return

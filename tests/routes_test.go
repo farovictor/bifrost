@@ -29,6 +29,7 @@ func setupRouter(s *routes.Server) http.Handler {
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Get("/user", s.GetUserInfo)
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/user/rootkeys", s.CreateRootKey)
 
+		r.Post("/token/refresh", s.RefreshToken)
 		r.Post("/service-token", s.ServiceToken)
 		r.With(rl.RateLimitMiddleware(s.KeyStore)).Handle("/proxy/*", http.HandlerFunc(v1h.Proxy))
 

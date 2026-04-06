@@ -67,6 +67,9 @@ definitions:
       role:
         example: member
         type: string
+      ttl:
+        example: 1h
+        type: string
     type: object
   routes.CreateUserResponse:
     properties:
@@ -1040,8 +1043,17 @@ paths:
       - setup
   /v1/token/refresh:
     post:
-      description: Accepts a valid bearer token and returns a new one with a fresh
-        24h expiry.
+      consumes:
+      - application/json
+      description: Accepts a valid bearer token and returns a new one. An optional
+        JSON body may specify a "ttl" field (e.g. "1h"); falls back to BIFROST_TOKEN_TTL
+        or 24h.
+      parameters:
+      - description: 'Optional TTL override: {\'
+        in: body
+        name: body
+        schema:
+          type: object
       produces:
       - application/json
       responses:
@@ -1049,6 +1061,10 @@ paths:
           description: 'New token: {\"token\":\"...\"}'
           schema:
             type: object
+        "400":
+          description: invalid ttl
+          schema:
+            $ref: '#/definitions/routes.ErrorResponse'
         "401":
           description: invalid or expired token
           schema:
