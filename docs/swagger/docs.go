@@ -1535,6 +1535,12 @@ const docTemplate = `{
         "keys.VirtualKey": {
             "type": "object",
             "properties": {
+                "alert_threshold": {
+                    "type": "integer"
+                },
+                "alert_webhook": {
+                    "type": "string"
+                },
                 "expires_at": {
                     "type": "string"
                 },
