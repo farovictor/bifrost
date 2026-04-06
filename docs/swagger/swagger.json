@@ -1348,7 +1348,10 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Accepts a valid bearer token and returns a new one with a fresh 24h expiry.",
+                "description": "Accepts a valid bearer token and returns a new one. An optional JSON body may specify a \"ttl\" field (e.g. \"1h\"); falls back to BIFROST_TOKEN_TTL or 24h.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1356,11 +1359,27 @@
                     "users"
                 ],
                 "summary": "Refresh bearer token",
+                "parameters": [
+                    {
+                        "description": "Optional TTL override: {\\",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "New token: {\\\"token\\\":\\\"...\\\"}",
                         "schema": {
                             "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid ttl",
+                        "schema": {
+                            "$ref": "#/definitions/routes.ErrorResponse"
                         }
                     },
                     "401": {
@@ -1606,6 +1625,10 @@
                 "role": {
                     "type": "string",
                     "example": "member"
+                },
+                "ttl": {
+                    "type": "string",
+                    "example": "1h"
                 }
             }
         },

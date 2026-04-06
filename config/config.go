@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ServerPort returns the port the HTTP server should listen on.
@@ -195,6 +196,18 @@ func StaticAPIKey() string {
 		key = "secret"
 	}
 	return key
+}
+
+// TokenTTL returns the default lifetime for bearer tokens issued by the server.
+// It reads BIFROST_TOKEN_TTL (any Go duration string, e.g. "1h", "30m") and
+// defaults to 24h when unset or unparseable.
+func TokenTTL() time.Duration {
+	if v := os.Getenv("BIFROST_TOKEN_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+	}
+	return 24 * time.Hour
 }
 
 // TrackTokens reports whether token counting is enabled via BIFROST_TRACK_TOKENS=true.

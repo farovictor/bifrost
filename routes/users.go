@@ -2,10 +2,12 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/auth"
 	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/orgs"
@@ -20,6 +22,7 @@ type CreateUserRequest struct {
 	OrgID   string `json:"org_id"   example:""`
 	OrgName string `json:"org_name" example:"Acme"`
 	Role    string `json:"role"     example:"member"`
+	TTL     string `json:"ttl"      example:"1h"`
 }
 
 // CreateUserResponse is returned on successful user creation.
@@ -126,7 +129,12 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	token, err := buildAuthToken(u.ID, orgID)
+	ttl, err := parseTTL(req.TTL)
+	if err != nil {
+		writeError(w, "invalid ttl: use a Go duration string (e.g. \"1h\", \"30m\")", http.StatusBadRequest)
+		return
+	}
+	token, err := buildAuthToken(u.ID, orgID, ttl)
 	if err != nil {
 		writeError(w, "internal error", http.StatusInternalServerError)
 		return
@@ -143,13 +151,16 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// RefreshToken handles POST /token/refresh and issues a fresh 24h token.
+// RefreshToken handles POST /token/refresh and issues a fresh token.
 //
 // @Summary      Refresh bearer token
-// @Description  Accepts a valid bearer token and returns a new one with a fresh 24h expiry.
+// @Description  Accepts a valid bearer token and returns a new one. An optional JSON body may specify a "ttl" field (e.g. "1h"); falls back to BIFROST_TOKEN_TTL or 24h.
 // @Tags         users
+// @Accept       json
 // @Produce      json
+// @Param        body  body      object  false  "Optional TTL override: {\"ttl\":\"1h\"}"
 // @Success      200  {object}  object  "New token: {\"token\":\"...\"}"
+// @Failure      400  {object}  ErrorResponse  "invalid ttl"
 // @Failure      401  {object}  ErrorResponse  "invalid or expired token"
 // @Failure      500  {object}  ErrorResponse
 // @Security     BearerAuth
@@ -166,7 +177,20 @@ func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		writeError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	token, err := buildAuthToken(tok.UserID, tok.OrgID)
+
+	var body struct {
+		TTL string `json:"ttl"`
+	}
+	// Body is optional — ignore decode errors.
+	json.NewDecoder(r.Body).Decode(&body) //nolint:errcheck
+
+	ttl, err := parseTTL(body.TTL)
+	if err != nil {
+		writeError(w, "invalid ttl: use a Go duration string (e.g. \"1h\", \"30m\")", http.StatusBadRequest)
+		return
+	}
+
+	token, err := buildAuthToken(tok.UserID, tok.OrgID, ttl)
 	if err != nil {
 		writeError(w, "internal error", http.StatusInternalServerError)
 		return
@@ -177,11 +201,25 @@ func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}{Token: token})
 }
 
-func buildAuthToken(userID, orgID string) (string, error) {
+// parseTTL converts a duration string to a time.Duration, falling back to
+// config.TokenTTL() when s is empty. Returns an error when s is non-empty
+// but unparseable or <= 0.
+func parseTTL(s string) (time.Duration, error) {
+	if s == "" {
+		return config.TokenTTL(), nil
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil || d <= 0 {
+		return 0, fmt.Errorf("invalid duration %q", s)
+	}
+	return d, nil
+}
+
+func buildAuthToken(userID, orgID string, ttl time.Duration) (string, error) {
 	t := auth.AuthToken{
 		UserID:    userID,
 		OrgID:     orgID,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		ExpiresAt: time.Now().Add(ttl),
 	}
 	return auth.Sign(t)
 }
