@@ -19,4 +19,7 @@ type VirtualKey struct {
 // SourceMCP is the source label for keys issued via the MCP tool.
 const SourceMCP = "mcp"
 
+// SourceServiceAccount is the source label for keys issued via POST /v1/service-token.
+const SourceServiceAccount = "sa"
+
 func (VirtualKey) TableName() string { return "virtual_keys" }

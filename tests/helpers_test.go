@@ -9,6 +9,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/keys"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/serviceaccounts"
 	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/usage"
 	"github.com/farovictor/bifrost/pkg/users"
@@ -19,13 +20,14 @@ import (
 func newTestServer(t *testing.T) *routes.Server {
 	t.Helper()
 	return &routes.Server{
-		UserStore:       users.NewMemoryStore(),
-		KeyStore:        keys.NewMemoryStore(),
-		RootKeyStore:    rootkeys.NewMemoryStore(),
-		ServiceStore:    services.NewMemoryStore(),
-		OrgStore:        orgs.NewMemoryStore(),
-		MembershipStore: orgs.NewMemoryMembershipStore(),
-		UsageStore:      usage.NewMemoryStore(),
+		UserStore:           users.NewMemoryStore(),
+		KeyStore:            keys.NewMemoryStore(),
+		RootKeyStore:        rootkeys.NewMemoryStore(),
+		ServiceStore:        services.NewMemoryStore(),
+		OrgStore:            orgs.NewMemoryStore(),
+		MembershipStore:     orgs.NewMemoryMembershipStore(),
+		UsageStore:          usage.NewMemoryStore(),
+		ServiceAccountStore: serviceaccounts.NewMemoryStore(),
 	}
 }
 

@@ -29,6 +29,7 @@ func setupRouter(s *routes.Server) http.Handler {
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Get("/user", s.GetUserInfo)
 		r.With(rl.OrgCtxMiddleware(s.MembershipStore)).Post("/user/rootkeys", s.CreateRootKey)
 
+		r.Post("/service-token", s.ServiceToken)
 		r.With(rl.RateLimitMiddleware(s.KeyStore)).Handle("/proxy/*", http.HandlerFunc(v1h.Proxy))
 
 		r.Group(func(r chi.Router) {
@@ -46,6 +47,10 @@ func setupRouter(s *routes.Server) http.Handler {
 			r.Get("/services", s.ListServices)
 			r.Post("/services", s.CreateService)
 			r.Delete("/services/{id}", s.DeleteService)
+
+			r.Get("/serviceaccounts", s.ListServiceAccounts)
+			r.Post("/serviceaccounts", s.CreateServiceAccount)
+			r.Delete("/serviceaccounts/{id}", s.DeleteServiceAccount)
 
 			r.Get("/orgs", s.ListOrgs)
 			r.Post("/orgs", s.CreateOrg)
