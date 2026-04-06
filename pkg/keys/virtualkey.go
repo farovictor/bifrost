@@ -10,10 +10,12 @@ type VirtualKey struct {
 	ExpiresAt time.Time `json:"expires_at" gorm:"not null"`
 	Target    string    `json:"target" gorm:"not null"`
 	RateLimit int       `json:"rate_limit" gorm:"not null"`
-	Source      string `json:"source,omitempty" gorm:"size:16;default:''"`
-	OneShot     bool   `json:"one_shot,omitempty" gorm:"default:false"`
-	Used        bool   `json:"used,omitempty" gorm:"default:false"`
-	TokenBudget int    `json:"token_budget,omitempty" gorm:"default:0"`
+	Source         string `json:"source,omitempty" gorm:"size:16;default:''"`
+	OneShot        bool   `json:"one_shot,omitempty" gorm:"default:false"`
+	Used           bool   `json:"used,omitempty" gorm:"default:false"`
+	TokenBudget    int    `json:"token_budget,omitempty" gorm:"default:0"`
+	AlertThreshold int    `json:"alert_threshold,omitempty" gorm:"default:0"`
+	AlertWebhook   string `json:"alert_webhook,omitempty" gorm:"size:2048;default:''"`
 }
 
 // SourceMCP is the source label for keys issued via the MCP tool.

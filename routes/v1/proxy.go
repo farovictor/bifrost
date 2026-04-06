@@ -11,6 +11,7 @@ import (
 
 	"github.com/farovictor/bifrost/config"
 	"github.com/farovictor/bifrost/pkg/keys"
+	"github.com/farovictor/bifrost/pkg/logging"
 	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
 	"github.com/farovictor/bifrost/pkg/services"
@@ -164,6 +165,13 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 	latency := time.Since(start).Milliseconds()
 
 	if h.UsageStore != nil {
+		// Snapshot total before this request so we can detect threshold crossings.
+		var prevTotal int
+		alerting := k.AlertThreshold > 0 && k.AlertWebhook != ""
+		if alerting {
+			prevTotal = h.UsageStore.TotalTokens(k.ID)
+		}
+
 		ev := usage.Event{
 			KeyID:      k.ID,
 			Timestamp:  time.Now(),
@@ -180,5 +188,45 @@ func (h *Handler) Proxy(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		h.UsageStore.Record(ev) //nolint:errcheck
+
+		// Fire webhook when the alert threshold is crossed for the first time.
+		if alerting {
+			newTotal := prevTotal + ev.TotalTokens
+			if prevTotal < k.AlertThreshold && newTotal >= k.AlertThreshold {
+				go fireAlertWebhook(k.AlertWebhook, k.ID, k.Target, k.AlertThreshold, newTotal)
+			}
+		}
 	}
+}
+
+// alertPayload is the JSON body sent to the alert webhook.
+type alertPayload struct {
+	Event        string    `json:"event"`
+	KeyID        string    `json:"key_id"`
+	Service      string    `json:"service"`
+	Threshold    int       `json:"threshold"`
+	TotalTokens  int       `json:"total_tokens"`
+	Timestamp    time.Time `json:"timestamp"`
+}
+
+// fireAlertWebhook posts an alert to the configured URL. Called in a goroutine —
+// failures are logged but do not affect the proxied response.
+func fireAlertWebhook(webhookURL, keyID, service string, threshold, totalTokens int) {
+	payload, err := json.Marshal(alertPayload{
+		Event:       "token_threshold_crossed",
+		KeyID:       keyID,
+		Service:     service,
+		Threshold:   threshold,
+		TotalTokens: totalTokens,
+		Timestamp:   time.Now().UTC(),
+	})
+	if err != nil {
+		return
+	}
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewReader(payload)) //nolint:noctx
+	if err != nil {
+		logging.Logger.Warn().Err(err).Str("key_id", keyID).Msg("alert webhook failed")
+		return
+	}
+	resp.Body.Close()
 }
