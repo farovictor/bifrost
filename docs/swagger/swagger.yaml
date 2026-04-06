@@ -16,6 +16,8 @@ definitions:
         type: string
       target:
         type: string
+      token_budget:
+        type: integer
       used:
         type: boolean
     type: object
