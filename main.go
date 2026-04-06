@@ -15,6 +15,7 @@ import (
 	"github.com/farovictor/bifrost/pkg/metrics"
 	"github.com/farovictor/bifrost/pkg/orgs"
 	"github.com/farovictor/bifrost/pkg/rootkeys"
+	"github.com/farovictor/bifrost/pkg/serviceaccounts"
 	"github.com/farovictor/bifrost/pkg/services"
 	"github.com/farovictor/bifrost/pkg/usage"
 	"github.com/farovictor/bifrost/pkg/users"
@@ -68,6 +69,7 @@ func main() {
 			&orgs.Organization{},
 			&orgs.Membership{},
 			&usage.Event{},
+			&serviceaccounts.ServiceAccount{},
 		); err != nil {
 			logging.Logger.Fatal().Err(err).Msg("auto migrate")
 		}
@@ -94,13 +96,14 @@ func main() {
 	case "sqlite", "postgres":
 		if dsn == "" {
 			srv = &routes.Server{
-				UserStore:       users.NewMemoryStore(),
-				KeyStore:        keys.NewMemoryStore(),
-				RootKeyStore:    rootkeys.NewMemoryStoreWithKey(encKey),
-				ServiceStore:    services.NewMemoryStore(),
-				OrgStore:        orgs.NewMemoryStore(),
-				MembershipStore: orgs.NewMemoryMembershipStore(),
-				UsageStore:      usage.NewMemoryStore(),
+				UserStore:           users.NewMemoryStore(),
+				KeyStore:            keys.NewMemoryStore(),
+				RootKeyStore:        rootkeys.NewMemoryStoreWithKey(encKey),
+				ServiceStore:        services.NewMemoryStore(),
+				OrgStore:            orgs.NewMemoryStore(),
+				MembershipStore:     orgs.NewMemoryMembershipStore(),
+				UsageStore:          usage.NewMemoryStore(),
+				ServiceAccountStore: serviceaccounts.NewMemoryStore(),
 			}
 			logging.Logger.Info().Msg("In-Memory Store set")
 		} else {
@@ -109,25 +112,27 @@ func main() {
 				logging.Logger.Fatal().Err(err).Msg("connect " + dbType)
 			}
 			srv = &routes.Server{
-				UserStore:       users.NewSQLStore(db),
-				KeyStore:        keys.NewSQLStore(db),
-				RootKeyStore:    rootkeys.NewSQLStoreWithKey(db, encKey),
-				ServiceStore:    services.NewSQLStore(db),
-				OrgStore:        orgs.NewSQLStore(db),
-				MembershipStore: orgs.NewSQLMembershipStore(db),
-				UsageStore:      usage.NewSQLStore(db),
+				UserStore:           users.NewSQLStore(db),
+				KeyStore:            keys.NewSQLStore(db),
+				RootKeyStore:        rootkeys.NewSQLStoreWithKey(db, encKey),
+				ServiceStore:        services.NewSQLStore(db),
+				OrgStore:            orgs.NewSQLStore(db),
+				MembershipStore:     orgs.NewSQLMembershipStore(db),
+				UsageStore:          usage.NewSQLStore(db),
+				ServiceAccountStore: serviceaccounts.NewSQLStore(db),
 			}
 			logging.Logger.Info().Str("db", dbType).Msg("Store set")
 		}
 	default:
 		srv = &routes.Server{
-			UserStore:       users.NewMemoryStore(),
-			KeyStore:        keys.NewMemoryStore(),
-			RootKeyStore:    rootkeys.NewMemoryStoreWithKey(encKey),
-			ServiceStore:    services.NewMemoryStore(),
-			OrgStore:        orgs.NewMemoryStore(),
-			MembershipStore: orgs.NewMemoryMembershipStore(),
-			UsageStore:      usage.NewMemoryStore(),
+			UserStore:           users.NewMemoryStore(),
+			KeyStore:            keys.NewMemoryStore(),
+			RootKeyStore:        rootkeys.NewMemoryStoreWithKey(encKey),
+			ServiceStore:        services.NewMemoryStore(),
+			OrgStore:            orgs.NewMemoryStore(),
+			MembershipStore:     orgs.NewMemoryMembershipStore(),
+			UsageStore:          usage.NewMemoryStore(),
+			ServiceAccountStore: serviceaccounts.NewMemoryStore(),
 		}
 		logging.Logger.Info().Msg("In-Memory Store set")
 	}
@@ -174,6 +179,9 @@ func main() {
 		r.With(rl.OrgCtxMiddleware(srv.MembershipStore)).Post("/user/rootkeys", srv.CreateRootKey)
 		r.Post("/token/refresh", srv.RefreshToken)
 
+		// Service-account token endpoint — authenticated by X-Service-Key, no user session required
+		r.Post("/service-token", srv.ServiceToken)
+
 		// Proxy - authenticated by the virtual key; no API key or token required
 		r.With(rl.RateLimitMiddleware(srv.KeyStore)).Handle("/proxy/*", http.HandlerFunc(v1h.Proxy))
 
@@ -198,6 +206,10 @@ func main() {
 			r.Post("/services", srv.CreateService)
 			r.Put("/services/{id}", srv.UpdateService)
 			r.Delete("/services/{id}", srv.DeleteService)
+
+			r.Get("/serviceaccounts", srv.ListServiceAccounts)
+			r.Post("/serviceaccounts", srv.CreateServiceAccount)
+			r.Delete("/serviceaccounts/{id}", srv.DeleteServiceAccount)
 
 			r.Get("/orgs", srv.ListOrgs)
 			r.Post("/orgs", srv.CreateOrg)
